@@ -1,3 +1,5 @@
+use std::vec;
+
 use anyhow::Result;
 use num_traits::{NumCast, Zero, One};
 use super::Tensor;
@@ -135,6 +137,14 @@ impl<T> Tensor<T> {
         Self {
             data: vec![value],
             shape: vec![],
+        }
+    }
+
+    pub fn vector(vector: Vec<T>) -> Self {
+        let len = vector.len();
+        Self {
+            data: vector,
+            shape: vec![len],
         }
     }
 }
