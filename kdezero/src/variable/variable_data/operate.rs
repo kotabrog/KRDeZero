@@ -16,6 +16,17 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn exp(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.exp().into(),
+            VariableData::F64(x) => x.exp().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "exp".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
 }
 
 #[cfg(test)]
