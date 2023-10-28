@@ -1,6 +1,8 @@
 mod operate;
 
+use anyhow::Result;
 use ktensor::Tensor;
+use crate::error::KDeZeroError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum VariableData {
@@ -24,6 +26,68 @@ impl VariableData {
             Self::USIZE(_) => "usize",
             Self::Bool(_) => "bool",
         }
+    }
+}
+
+impl VariableData {
+    pub fn to_f32_tensor(&self) -> Result<&Tensor<f32>> {
+        Ok(match self {
+            Self::F32(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "F32".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn to_f64_tensor(&self) -> Result<&Tensor<f64>> {
+        Ok(match self {
+            Self::F64(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "F64".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn to_i32_tensor(&self) -> Result<&Tensor<i32>> {
+        Ok(match self {
+            Self::I32(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "I32".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn to_i64_tensor(&self) -> Result<&Tensor<i64>> {
+        Ok(match self {
+            Self::I64(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "I64".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn to_usize_tensor(&self) -> Result<&Tensor<usize>> {
+        Ok(match self {
+            Self::USIZE(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "USIZE".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn to_bool_tensor(&self) -> Result<&Tensor<bool>> {
+        Ok(match self {
+            Self::Bool(x) => x,
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "Bool".to_string(),
+            ).into()),
+        })
     }
 }
 

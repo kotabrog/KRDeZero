@@ -46,7 +46,46 @@ fn step3() -> Result<()> {
     let y3 = c.forward(&y2)?;
 
     println!("{:?}", y3[0].data());
-    assert_eq!(y3[0].data(), &0.5f32.powi(2).exp().powi(2).into());
+    assert_eq!(y3[0].data(), &0.5f64.powi(2).exp().powi(2).into());
+
+    Ok(())
+}
+
+#[test]
+fn step4() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::{Variable, Function};
+    use kdezero::function::{Square, Exp};
+    use kdezero::test_utility::{numerical_diff, assert_approx_eq_tensor};
+
+    let x = Variable::from(2.0);
+    let mut f = Square::new();
+    let dy = numerical_diff(
+        &mut f, &x, 1e-4)?;
+
+    println!("{:?}", dy);
+    assert_approx_eq_tensor(
+        dy.data().to_f64_tensor()?, &Tensor::scalar(4.0), 1e-4);
+
+    struct SES {}
+
+    impl Function for SES {
+        fn forward(&self, xs: &[Variable]) -> Result<Vec<Variable>> {
+            let y = Square::new().forward(xs)?;
+            let y = Exp::new().forward(&y)?;
+            Square::new().forward(&y)
+        }
+    }
+
+    let x = Variable::from(0.5);
+    let mut f = SES {};
+    let dy = numerical_diff(
+        &mut f, &x, 1e-4)?;
+
+    println!("{:?}", dy);
+    assert_approx_eq_tensor(
+        dy.data().to_f64_tensor()?,
+        &Tensor::scalar(3.2974426293330694), 1e-4);
 
     Ok(())
 }

@@ -29,7 +29,7 @@ mod tests {
     fn exp_forward() -> Result<()> {
         let x = Variable::from(2.0);
         let y = Exp::new().forward(&vec![x])?;
-        assert_eq!(y[0].data(), &2.0f32.exp().into());
+        assert_eq!(y[0].data(), &2.0f64.exp().into());
         Ok(())
     }
 
