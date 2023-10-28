@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 #[test]
 fn step1() {
     use kdezero::Variable;
@@ -12,4 +14,19 @@ fn step1() {
     println!("{:?}", x.data());
 
     assert_eq!(x.data(), &2.0.into());
+}
+
+#[test]
+fn step2() -> Result<()>{
+    use kdezero::{Variable, Function};
+    use kdezero::function::operator::Square;
+
+    let x = Variable::from(10);
+    let f = Square::new();
+    let y = f.forward(vec![x])?;
+
+    println!("{:?}", y[0].data());
+
+    assert_eq!(y[0].data(), &100.into());
+    Ok(())
 }

@@ -98,3 +98,9 @@ impl From<Tensor<bool>> for Variable {
         Self::new(data.into())
     }
 }
+
+impl From<VariableData> for Variable {
+    fn from(data: VariableData) -> Self {
+        Self::new(data)
+    }
+}

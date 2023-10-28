@@ -1,3 +1,5 @@
+mod operate;
+
 use ktensor::Tensor;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,6 +11,20 @@ pub enum VariableData {
     I64(Tensor<i64>),
     USIZE(Tensor<usize>),
     Bool(Tensor<bool>),
+}
+
+impl VariableData {
+    pub fn data_type(&self) -> &str {
+        match self {
+            Self::None => "None",
+            Self::F32(_) => "f32",
+            Self::F64(_) => "f64",
+            Self::I32(_) => "i32",
+            Self::I64(_) => "i64",
+            Self::USIZE(_) => "usize",
+            Self::Bool(_) => "bool",
+        }
+    }
 }
 
 impl From<f32> for VariableData {
