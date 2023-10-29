@@ -12,6 +12,10 @@ pub enum KDeZeroError {
     NotCollectType(String, String),
     #[error("NoInputVariable: {0} has no input variable")]
     NoInputVariable(String),
+    #[error("NoOutputVariable: {0} has no output variable")]
+    NoOutputVariable(String),
+    #[error("NoCreator: {0} has no creator")]
+    NoCreator(String),
 }
 
 #[cfg(test)]
@@ -94,6 +98,38 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "NoInputVariable: square has no input variable");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_no_output_variable() -> Result<()> {
+        Err(KDeZeroError::NoOutputVariable("square".to_string()).into())
+    }
+
+    #[test]
+    fn kdezero_error_no_output_variable() -> Result<()> {
+        match error_no_output_variable() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "NoOutputVariable: square has no output variable");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_no_creator() -> Result<()> {
+        Err(KDeZeroError::NoCreator("var".to_string()).into())
+    }
+
+    #[test]
+    fn kdezero_error_no_creator() -> Result<()> {
+        match error_no_creator() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "NoCreator: var has no creator");
                 Ok(())
             }
         }

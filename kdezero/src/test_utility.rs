@@ -1,7 +1,7 @@
 use anyhow::Result;
 use num_traits::Float;
 use ktensor::Tensor;
-use crate::{Variable, Function};
+use crate::{Variable, FunctionContent};
 
 pub fn assert_approx_eq<T>(a: T, b: T, eps: T)
 where
@@ -40,12 +40,14 @@ where
     (y1 - y0) / (eps + eps)
 }
 
-pub fn numerical_diff(f: &mut dyn Function, x: &Variable, eps: f64) -> Result<Variable> {
+pub fn numerical_diff(f: &mut dyn FunctionContent, x: &Variable, eps: f64) -> Result<Variable> {
     let x0 = x.data().scalar_add(-eps)?;
     let x1 = x.data().scalar_add(eps)?;
-    let y0 = &f.forward(vec![&x0.into()])?[0];
-    let y1 = &f.forward(vec![&x1.into()])?[0];
-    Ok(y1.data().sub(y0.data())?.scalar_mul(1.0 / (2.0 * eps))?.into())
+
+    let y0 = f.forward(vec![&x0.into()])?;
+    let y1 = f.forward(vec![&x1.into()])?;
+    let x = y1[0].data().sub(&y0[0].data())?.scalar_mul(1.0 / (2.0 * eps))?.into();
+    Ok(x)
 }
 
 #[cfg(test)]

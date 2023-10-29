@@ -1,8 +1,9 @@
 use anyhow::Result;
 use crate::Variable;
-use super::super::Function;
+use super::super::FunctionContent;
 use super::super::function_helper::check_variable_count;
 
+#[derive(Debug)]
 pub struct Exp {}
 
 impl Exp {
@@ -11,7 +12,7 @@ impl Exp {
     }
 }
 
-impl Function for Exp {
+impl FunctionContent for Exp {
     fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         let x = xs[0].data();
@@ -38,7 +39,7 @@ mod tests {
     fn exp_forward() -> Result<()> {
         let x = Variable::from(2.0);
         let y = Exp::new().forward(vec![&x])?;
-        assert_eq!(y[0].data(), &2.0f64.exp().into());
+        assert_eq!(*y[0].data(), 2.0f64.exp().into());
         Ok(())
     }
 
@@ -64,7 +65,7 @@ mod tests {
         let dy = Variable::from(3.0);
         let f = Exp::new();
         let dx = f.backward(vec![&x], vec![&dy])?;
-        assert_eq!(dx[0], (3.0 * 2.0f64.exp()).into());
+        assert_eq!(*dx[0].data(), (3.0 * 2.0f64.exp()).into());
         Ok(())
     }
 
