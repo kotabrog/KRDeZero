@@ -2,7 +2,7 @@ use anyhow::Result;
 use crate::error::KDeZeroError;
 use crate::Variable;
 
-pub fn check_variable_count(xs: &[Variable], n: usize) -> Result<()> {
+pub fn check_variable_count(xs: &Vec<&Variable>, n: usize) -> Result<()> {
     if xs.len() != n {
         Err(KDeZeroError::InvalidVariableCount(
             n,

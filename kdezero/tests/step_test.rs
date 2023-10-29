@@ -23,7 +23,7 @@ fn step2() -> Result<()> {
 
     let x = Variable::from(10);
     let f = Square::new();
-    let y = f.forward(&vec![x])?;
+    let y = f.forward(vec![&x])?;
 
     println!("{:?}", y[0].data());
 
@@ -41,9 +41,9 @@ fn step3() -> Result<()> {
     let b = Exp::new();
     let c = Square::new();
 
-    let y1 = a.forward(&vec![x])?;
-    let y2 = b.forward(&y1)?;
-    let y3 = c.forward(&y2)?;
+    let y1 = a.forward(vec![&x])?;
+    let y2 = b.forward(y1.iter().collect())?;
+    let y3 = c.forward(y2.iter().collect())?;
 
     println!("{:?}", y3[0].data());
     assert_eq!(y3[0].data(), &0.5f64.powi(2).exp().powi(2).into());
@@ -70,10 +70,10 @@ fn step4() -> Result<()> {
     struct SES {}
 
     impl Function for SES {
-        fn forward(&self, xs: &[Variable]) -> Result<Vec<Variable>> {
+        fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>> {
             let y = Square::new().forward(xs)?;
-            let y = Exp::new().forward(&y)?;
-            Square::new().forward(&y)
+            let y = Exp::new().forward(y.iter().collect())?;
+            Square::new().forward(y.iter().collect())
         }
     }
 
@@ -87,5 +87,49 @@ fn step4() -> Result<()> {
         dy.data().to_f64_tensor()?,
         &Tensor::scalar(3.2974426293330694), 1e-4);
 
+    Ok(())
+}
+
+#[test]
+fn step6() -> Result<()> {
+    use std::rc::Rc;
+    use kdezero::{Variable, Function, FunctionWrapper};
+    use kdezero::function::{Square, Exp};
+    use kdezero::test_utility::{numerical_diff, assert_approx_eq_tensor};
+
+    struct SES {}
+
+    impl Function for SES {
+        fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>> {
+            let y = Square::new().forward(xs)?;
+            let y = Exp::new().forward(y.iter().collect())?;
+            Square::new().forward(y.iter().collect())
+        }
+    }
+
+    let x = Rc::new(Variable::from(0.5));
+    let mut f = SES {};
+    let dx1 = numerical_diff(
+        &mut f, &x, 1e-4)?;
+
+    let mut a = FunctionWrapper::new(Square::new());
+    let mut b = FunctionWrapper::new(Exp::new());
+    let mut c = FunctionWrapper::new(Square::new());
+
+    let mut y1 = a.forward(&[x.clone()])?;
+    let y1 = Rc::new(y1.remove(0));
+    let mut y2 = b.forward(&vec![y1])?;
+    let y2 = Rc::new(y2.remove(0));
+    let _y3 = c.forward(&vec![y2])?;
+
+    let dx = Variable::from(1.0);
+    let dx = c.backward_into(vec![dx])?;
+    let dx = b.backward_into(dx)?;
+    let dx2 = a.backward_into(dx)?;
+
+    println!("{:?}", dx2);
+    assert_approx_eq_tensor(
+        dx1.data().to_f64_tensor()?,
+        dx2[0].data().to_f64_tensor()?, 1e-4);
     Ok(())
 }

@@ -10,6 +10,8 @@ pub enum KDeZeroError {
     NotImplementedType(String, String),
     #[error("NotCollectType: {0} is not collect type. Expected: {1}")]
     NotCollectType(String, String),
+    #[error("NoInputVariable: {0} has no input variable")]
+    NoInputVariable(String),
 }
 
 #[cfg(test)]
@@ -60,6 +62,38 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "NotImplementedType: square is not implemented for bool");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_not_collect_type() -> Result<()> {
+        Err(KDeZeroError::NotCollectType("square".to_string(), "bool".to_string()).into())
+    }
+    
+    #[test]
+    fn kdezero_error_not_collect_type() -> Result<()> {
+        match error_not_collect_type() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "NotCollectType: square is not collect type. Expected: bool");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_no_input_variable() -> Result<()> {
+        Err(KDeZeroError::NoInputVariable("square".to_string()).into())
+    }
+
+    #[test]
+    fn kdezero_error_no_input_variable() -> Result<()> {
+        match error_no_input_variable() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "NoInputVariable: square has no input variable");
                 Ok(())
             }
         }

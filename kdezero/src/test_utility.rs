@@ -43,8 +43,8 @@ where
 pub fn numerical_diff(f: &mut dyn Function, x: &Variable, eps: f64) -> Result<Variable> {
     let x0 = x.data().scalar_add(-eps)?;
     let x1 = x.data().scalar_add(eps)?;
-    let y0 = &f.forward(&vec![x0.into()])?[0];
-    let y1 = &f.forward(&vec![x1.into()])?[0];
+    let y0 = &f.forward(vec![&x0.into()])?[0];
+    let y1 = &f.forward(vec![&x1.into()])?[0];
     Ok(y1.data().sub(y0.data())?.scalar_mul(1.0 / (2.0 * eps))?.into())
 }
 

@@ -7,11 +7,15 @@ pub use variable_data::VariableData;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variable {
     data: VariableData,
+    grad: Option<VariableData>,
 }
 
 impl Variable {
     pub fn new(data: VariableData) -> Self {
-        Self { data }
+        Self {
+            data,
+            grad: None,
+        }
     }
 
     pub fn data(&self) -> &VariableData {
