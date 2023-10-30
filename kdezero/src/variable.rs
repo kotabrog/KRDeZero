@@ -7,6 +7,7 @@ use anyhow::Result;
 use ktensor::Tensor;
 use crate::Function;
 use crate::error::KDeZeroError;
+use crate::function::add;
 
 pub use variable_data::VariableData;
 
@@ -95,6 +96,11 @@ impl Variable {
         inner.grad = Some(grad);
     }
 
+    pub fn clear_grad(&mut self) {
+        let mut inner = self.inner.borrow_mut();
+        inner.grad = None;
+    }
+
     pub fn get_creator_clone(&self) -> Option<Function> {
         let inner = self.inner.borrow();
         inner.creator.clone()
@@ -113,6 +119,11 @@ impl Variable {
     }
 
     pub fn backward(&mut self) -> Result<()> {
+        if self.is_grad_none() {
+            let ones = self.data().ones_like()?;
+            self.set_grad(ones.into());
+        }
+
         let mut funcs = VecDeque::new();
         funcs.push_back(self.get_creator_clone_result()?);
         while !funcs.is_empty() {
@@ -128,9 +139,7 @@ impl Variable {
                 if x.is_grad_none() {
                     x.set_grad(xg);
                 } else {
-                    // let gx = x.grad_result()?;
-                    // x.set_grad(gx.add(&xg)?);
-                    todo!()
+                    x.set_grad(add(&x.grad_result()?, &xg)?);
                 }
                 if let Some(c) = x.get_creator_clone() {
                     funcs.push_back(c);

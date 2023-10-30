@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::Variable;
-use super::super::FunctionContent;
+use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
 #[derive(Debug)]
@@ -28,6 +28,13 @@ impl FunctionContent for Exp {
         let gx = gy.mul(&x.exp()?)?;
         Ok(vec![gx.into()])
     }
+}
+
+pub fn exp(x: &Variable) -> Result<Variable> {
+    let mut func = Function::new(Exp::new());
+    let mut ys = func.forward(&[x.clone()])?;
+    let y = ys.remove(0);
+    Ok(y)
 }
 
 #[cfg(test)]
@@ -102,6 +109,14 @@ mod tests {
                 ));
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn exp_normal() -> Result<()> {
+        let x = Variable::from(2.0);
+        let y = exp(&x)?;
+        assert_eq!(*y.data(), 2.0f64.exp().into());
         Ok(())
     }
 }

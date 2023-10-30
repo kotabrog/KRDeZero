@@ -27,6 +27,20 @@ impl VariableData {
             Self::Bool(_) => "bool",
         }
     }
+
+    pub fn ones_like(&self) -> Result<Self> {
+        Ok(match self {
+            Self::F32(x) => Self::F32(Tensor::ones_like(x)),
+            Self::F64(x) => Self::F64(Tensor::ones_like(x)),
+            Self::I32(x) => Self::I32(Tensor::ones_like(x)),
+            Self::I64(x) => Self::I64(Tensor::ones_like(x)),
+            Self::USIZE(x) => Self::USIZE(Tensor::ones_like(x)),
+            _ => return Err(KDeZeroError::NotCollectType(
+                self.data_type().to_string(),
+                "ones_like".to_string(),
+            ).into()),
+        })
+    }
 }
 
 impl VariableData {

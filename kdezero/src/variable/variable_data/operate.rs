@@ -28,6 +28,20 @@ impl VariableData {
         })
     }
 
+    pub fn add(&self, other: &VariableData) -> Result<VariableData> {
+        Ok(match (self, other) {
+            (VariableData::F32(x), VariableData::F32(y)) => (x + y).into(),
+            (VariableData::F64(x), VariableData::F64(y)) => (x + y).into(),
+            (VariableData::I32(x), VariableData::I32(y)) => (x + y).into(),
+            (VariableData::I64(x), VariableData::I64(y)) => (x + y).into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) => (x + y).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "add".to_string(),
+                format!("{:?}, {:?}", self.data_type(), other.data_type()),
+            ).into()),
+        })
+    }
+
     pub fn sub(&self, other: &VariableData) -> Result<VariableData> {
         Ok(match (self, other) {
             (VariableData::F32(x), VariableData::F32(y)) => (x - y).into(),
@@ -131,6 +145,32 @@ mod tests {
                 assert_eq!(e, KDeZeroError::NotImplementedType(
                     "exp".to_string(),
                     x.data_type().to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn add_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = VariableData::from(3.0f32);
+        let z = x.add(&y)?;
+        assert_eq!(z, VariableData::from(5.0f32));
+        Ok(())
+    }
+
+    #[test]
+    fn error_add_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        let y = VariableData::from(false);
+        match x.add(&y) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e, KDeZeroError::NotImplementedType(
+                    "add".to_string(),
+                    format!("{:?}, {:?}", x.data_type(), y.data_type()),
                 ));
             }
         }

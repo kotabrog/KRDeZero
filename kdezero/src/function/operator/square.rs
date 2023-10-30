@@ -1,6 +1,6 @@
 use anyhow::Result;
 use crate::Variable;
-use super::super::FunctionContent;
+use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
 #[derive(Debug)]
@@ -28,6 +28,13 @@ impl FunctionContent for Square {
         let gx = gy.mul(&x.scalar_mul(2.0)?)?;
         Ok(vec![gx.into()])
     }
+}
+
+pub fn square(x: &Variable) -> Result<Variable> {
+    let mut func = Function::new(Square::new());
+    let mut ys = func.forward(&[x.clone()])?;
+    let y = ys.remove(0);
+    Ok(y)
 }
 
 #[cfg(test)]
@@ -102,6 +109,14 @@ mod tests {
                 ));
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn square_normal() -> Result<()> {
+        let x = Variable::from(2.0);
+        let y = square(&x)?;
+        assert_eq!(*y.data(), 4.0.into());
         Ok(())
     }
 }

@@ -8,7 +8,8 @@ use crate::{Variable, VariableWeak};
 use crate::error::KDeZeroError;
 
 pub use operator::{
-    Square, Exp
+    Square, Exp, Add,
+    exp, square, add,
 };
 
 pub trait FunctionContent: std::fmt::Debug {
