@@ -10,6 +10,7 @@ mod math;
 mod random;
 mod convert;
 pub mod iter;
+mod display;
 
 use anyhow::Result;
 pub use random::TensorRng;

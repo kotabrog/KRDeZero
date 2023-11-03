@@ -271,3 +271,89 @@ fn step14() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step16() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::{add, square};
+
+    let x = Variable::from(2.0);
+    let a = square(&x)?;
+    let mut y = add(&square(&a)?, &square(&a)?)?;
+    y.backward()?;
+
+    println!("{:?}", y.data());
+    println!("{:?}", x.grad_result()?.data());
+    assert_eq!(*y.data(), 32.0.into());
+    assert_eq!(*x.grad_result()?.data(), 64.0.into());
+
+    Ok(())
+}
+
+#[test]
+fn step18() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::{add, square};
+    use kdezero::no_grad;
+
+    let x0 = Variable::from(1.0);
+    let x1 = Variable::from(1.0);
+    let t = add(&x0, &x1)?;
+    let mut y = add(&x0, &t)?;
+    y.backward()?;
+
+    println!("{:?}", y.grad_clone());
+    assert!(y.is_grad_none());
+    println!("{:?}", t.grad_clone());
+    assert!(t.is_grad_none());
+    println!("{:?}", x0.grad_result()?.data());
+    assert_eq!(*x0.grad_result()?.data(), 2.0.into());
+    println!("{:?}", x1.grad_result()?.data());
+    assert_eq!(*x1.grad_result()?.data(), 1.0.into());
+
+    {
+        let _guard = no_grad();
+        let x = Variable::from(2.0);
+        let mut y = square(&x)?;
+
+        println!("{:?}", y.data());
+        assert_eq!(*y.data(), 4.0.into());
+
+        match y.backward() {
+            Ok(_) => panic!("should not be here"),
+            Err(e) => println!("{:?}", e),
+        }
+    }
+
+    Ok(())
+}
+
+#[test]
+fn step19() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+
+    let x = Variable::new_with_name(2.0.into(), "x");
+    println!("{:?}", x.name());
+    assert_eq!(*x.name(), "x");
+
+    let x = Variable::from(
+        Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3])?
+    );
+    println!("{:?}", x.shape());
+    assert_eq!(*x.shape(), vec![2, 3]);
+
+    println!("{:?}", x.ndim());
+    assert_eq!(x.ndim(), 2);
+
+    println!("{:?}", x.size());
+    assert_eq!(x.size(), 6);
+
+    println!("{:?}", x.data_type());
+    assert_eq!(*x.data_type(), *"f64");
+
+    println!("{}", x);
+    assert_eq!(format!("{}", x), "Variable(tensor([[1, 2, 3],\n                 [4, 5, 6]], type=f64))");
+
+    Ok(())
+}

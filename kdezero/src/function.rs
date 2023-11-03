@@ -1,11 +1,13 @@
 mod operator;
 mod function_helper;
 
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::cell::{RefCell, Ref};
 use anyhow::Result;
 use crate::{Variable, VariableWeak};
 use crate::error::KDeZeroError;
+use crate::is_no_grad_enabled;
 
 pub use operator::{
     Square, Exp, Add,
@@ -25,6 +27,7 @@ pub struct FunctionInner {
     pub inputs: Option<Vec<Variable>>,
     pub outputs: Option<Vec<VariableWeak>>,
     pub name: String,
+    pub generation: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +45,7 @@ impl FunctionInner {
             inputs: None,
             outputs: None,
             name: "".to_string(),
+            generation: 0,
         }
     }
 }
@@ -59,7 +63,6 @@ impl Function {
     pub fn name(&self) -> Ref<String> {
         let inner = self.inner.borrow();
         Ref::map(inner, |inner| &inner.name)
-        
     }
 
     pub fn inputs_clone_result(&self) -> Result<Vec<Variable>> {
@@ -85,8 +88,17 @@ impl Function {
         Ok(outputs)
     }
 
+    pub fn generation(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.generation
+    }
+
+    fn set_generation(&mut self, generation: usize) {
+        let mut inner = self.inner.borrow_mut();
+        inner.generation = generation;
+    }
+
     pub fn forward(&mut self, xs: &[Variable]) -> Result<Vec<Variable>> {
-        let inner = &mut self.inner.borrow_mut();
         let xs = xs
             .iter()
             .map(|x| x.clone())
@@ -95,17 +107,30 @@ impl Function {
             .iter()
             .map(|x| x)
             .collect::<Vec<_>>();
-        let mut ys = inner.func.forward(refs)?;
-        for y in &mut ys {
-            y.set_creator(self.clone());
-        }
-        inner.outputs = Some(
+        let mut ys = {
+            let inner = &mut self.inner.borrow_mut();
+            let ys = inner.func.forward(refs)?;
             ys
+        };
+        if !is_no_grad_enabled() {
+            let generation = xs
                 .iter()
-                .map(|y| VariableWeak::new(y.clone()))
-                .collect::<Vec<_>>()
-        );
-        inner.inputs = Some(xs);
+                .map(|x| x.generation())
+                .max()
+                .unwrap_or(0);
+            self.set_generation(generation);
+            for y in &mut ys {
+                y.set_creator(self.clone());
+            }
+            let inner = &mut self.inner.borrow_mut();
+            inner.outputs = Some(
+                ys
+                    .iter()
+                    .map(|y| VariableWeak::new(y.clone()))
+                    .collect::<Vec<_>>()
+            );
+            inner.inputs = Some(xs);
+        } 
         Ok(ys)
     }
 
@@ -123,5 +148,19 @@ impl Function {
             .collect::<Vec<_>>();
         let gxs = inner.func.backward(xs, gys)?;
         Ok(gxs)
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.inner, &other.inner)
+    }
+}
+
+impl Eq for Function {}
+
+impl Hash for Function {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Rc::as_ptr(&self.inner).hash(state);
     }
 }

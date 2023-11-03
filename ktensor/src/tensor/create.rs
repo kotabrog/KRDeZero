@@ -1,5 +1,3 @@
-use std::vec;
-
 use anyhow::Result;
 use num_traits::{NumCast, Zero, One};
 use super::Tensor;
@@ -140,6 +138,11 @@ impl<T> Tensor<T> {
         }
     }
 
+    /// Create a vector tensor with the specified vector
+    /// 
+    /// # Arguments
+    /// 
+    /// * `vector` - The vector to be used for the tensor
     pub fn vector(vector: Vec<T>) -> Self {
         let len = vector.len();
         Self {

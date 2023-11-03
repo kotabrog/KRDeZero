@@ -2,7 +2,7 @@ mod variable_data;
 
 use std::rc::{Rc, Weak};
 use std::cell::{RefCell, Ref, RefMut};
-use std::collections::VecDeque;
+use std::collections::{BinaryHeap, HashSet};
 use anyhow::Result;
 use ktensor::Tensor;
 use crate::Function;
@@ -17,6 +17,7 @@ pub struct VariableInner {
     pub grad: Option<Variable>,
     pub creator: Option<Function>,
     pub name: String,
+    pub generation: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +37,7 @@ impl VariableInner {
             grad: None,
             creator: None,
             name: "".to_string(),
+            generation: 0,
         }
     }
 }
@@ -59,9 +61,20 @@ impl Variable {
         }
     }
 
+    pub fn new_with_name(data: VariableData, name: &str) -> Self {
+        let mut variable = Self::new(data);
+        variable.set_name(name);
+        variable
+    }
+
     pub fn name(&self) -> Ref<String> {
         let inner = self.inner.borrow();
         Ref::map(inner, |inner| &inner.name)
+    }
+
+    pub fn set_name(&mut self, name: &str) {
+        let mut inner = self.inner.borrow_mut();
+        inner.name = name.to_string();
     }
 
     pub fn data(&self) -> Ref<VariableData> {
@@ -82,6 +95,11 @@ impl Variable {
     pub fn is_grad_none(&self) -> bool {
         let inner = self.inner.borrow();
         inner.grad.is_none()
+    }
+
+    pub fn grad_clone(&self) -> Option<Variable> {
+        let inner = self.inner.borrow();
+        inner.grad.clone()
     }
 
     pub fn grad_result(&self) -> Result<Variable> {
@@ -115,19 +133,83 @@ impl Variable {
 
     pub fn set_creator(&mut self, creator: Function) {
         let mut inner = self.inner.borrow_mut();
+        inner.generation = creator.generation() + 1;
         inner.creator = Some(creator);
     }
 
-    pub fn backward(&mut self) -> Result<()> {
+    pub fn generation(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.generation
+    }
+
+    pub fn shape(&self) -> Ref<[usize]> {
+        let inner = self.inner.borrow();
+        Ref::map(inner, |inner| inner.data.shape())
+    }
+
+    pub fn ndim(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.data.ndim()
+    }
+
+    pub fn size(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.data.size()
+    }
+
+    pub fn data_type(&self) -> Ref<str> {
+        let inner = self.inner.borrow();
+        Ref::map(inner, |inner| inner.data.data_type())
+    }
+
+    fn backward_inner(&mut self, retain_grad: bool) -> Result<()> {
         if self.is_grad_none() {
             let ones = self.data().ones_like()?;
             self.set_grad(ones.into());
         }
 
-        let mut funcs = VecDeque::new();
-        funcs.push_back(self.get_creator_clone_result()?);
+        struct OrdFunction {
+            pub function: Function,
+            pub generation: usize,
+        }
+
+        impl PartialEq for OrdFunction {
+            fn eq(&self, other: &Self) -> bool {
+                self.generation == other.generation
+            }
+        }
+
+        impl Eq for OrdFunction {}
+
+        impl PartialOrd for OrdFunction {
+            fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                self.generation.partial_cmp(&other.generation)
+            }
+        }
+
+        impl Ord for OrdFunction {
+            fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+                self.generation.cmp(&other.generation)
+            }
+        }
+
+        let mut funcs = BinaryHeap::new();
+        let mut seen_set = HashSet::new();
+
+        fn add_func(func: &Function, funcs: &mut BinaryHeap<OrdFunction>, seen_set: &mut HashSet<Function>) {
+            if seen_set.contains(func) {
+                return;
+            }
+            seen_set.insert(func.clone());
+            let generation = func.generation();
+            funcs.push(OrdFunction { function: func.clone(), generation });
+        }
+
+        add_func(&self.get_creator_clone_result()?, &mut funcs, &mut seen_set);
+
         while !funcs.is_empty() {
-            let f = funcs.pop_front().unwrap();
+            let f = funcs.pop().unwrap()
+                .function;
             let xs = f.inputs_clone_result()?;
             let ys = f.outputs_clone_result()?;
             let grad = ys
@@ -142,11 +224,24 @@ impl Variable {
                     x.set_grad(add(&x.grad_result()?, &xg)?);
                 }
                 if let Some(c) = x.get_creator_clone() {
-                    funcs.push_back(c);
+                    add_func(&c, &mut funcs, &mut seen_set);
+                }
+            }
+            if !retain_grad {
+                for mut y in f.outputs_clone_result()? {
+                    y.clear_grad();
                 }
             }
         }
         Ok(())
+    }
+
+    pub fn backward(&mut self) -> Result<()> {
+        self.backward_inner(false)
+    }
+
+    pub fn backward_retain_grad(&mut self) -> Result<()> {
+        self.backward_inner(true)
     }
 }
 
@@ -225,5 +320,14 @@ impl From<Tensor<bool>> for Variable {
 impl From<VariableData> for Variable {
     fn from(data: VariableData) -> Self {
         Self::new(data)
+    }
+}
+
+impl std::fmt::Display for Variable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let inner = self.inner.borrow();
+        let s = format!("Variable({})", inner.data)
+            .replace("\n", &format!("\n{}", " ".repeat(9)));
+        write!(f, "{}", s)
     }
 }

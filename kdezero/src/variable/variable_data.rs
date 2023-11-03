@@ -16,6 +16,42 @@ pub enum VariableData {
 }
 
 impl VariableData {
+    pub fn shape(&self) -> &[usize] {
+        match self {
+            Self::None => &[],
+            Self::F32(x) => x.get_shape(),
+            Self::F64(x) => x.get_shape(),
+            Self::I32(x) => x.get_shape(),
+            Self::I64(x) => x.get_shape(),
+            Self::USIZE(x) => x.get_shape(),
+            Self::Bool(x) => x.get_shape(),
+        }
+    }
+
+    pub fn ndim(&self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::F32(x) => x.ndim(),
+            Self::F64(x) => x.ndim(),
+            Self::I32(x) => x.ndim(),
+            Self::I64(x) => x.ndim(),
+            Self::USIZE(x) => x.ndim(),
+            Self::Bool(x) => x.ndim(),
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::F32(x) => x.size(),
+            Self::F64(x) => x.size(),
+            Self::I32(x) => x.size(),
+            Self::I64(x) => x.size(),
+            Self::USIZE(x) => x.size(),
+            Self::Bool(x) => x.size(),
+        }
+    }
+
     pub fn data_type(&self) -> &str {
         match self {
             Self::None => "None",
@@ -174,5 +210,19 @@ impl From<Tensor<usize>> for VariableData {
 impl From<Tensor<bool>> for VariableData {
     fn from(data: Tensor<bool>) -> Self {
         Self::Bool(data)
+    }
+}
+
+impl std::fmt::Display for VariableData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => write!(f, "None"),
+            Self::F32(x) => write!(f, "{}", x),
+            Self::F64(x) => write!(f, "{}", x),
+            Self::I32(x) => write!(f, "{}", x),
+            Self::I64(x) => write!(f, "{}", x),
+            Self::USIZE(x) => write!(f, "{}", x),
+            Self::Bool(x) => write!(f, "{}", x),
+        }
     }
 }
