@@ -6,6 +6,7 @@ mod grad;
 mod creator;
 mod conversion;
 mod info;
+mod ops;
 mod backward;
 
 use std::rc::Rc;

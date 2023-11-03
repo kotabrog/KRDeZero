@@ -357,3 +357,39 @@ fn step19() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step20() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::{add, mul};
+
+    let a = Variable::from(3.0);
+    let b = Variable::from(2.0);
+    let c = Variable::from(1.0);
+
+    let mut y = add(&mul(&a, &b)?, &c)?;
+    y.backward()?;
+
+    println!("{:?}", y.data());
+    assert_eq!(*y.data(), 7.0.into());
+    println!("{:?}", a.grad_result()?.data());
+    assert_eq!(*a.grad_result()?.data(), 2.0.into());
+    println!("{:?}", b.grad_result()?.data());
+    assert_eq!(*b.grad_result()?.data(), 3.0.into());
+
+    let a = Variable::from(3.0);
+    let b = Variable::from(2.0);
+    let c = Variable::from(1.0);
+
+    let mut y = &a * &b + c;
+    y.backward()?;
+
+    println!("{:?}", y.data());
+    assert_eq!(*y.data(), 7.0.into());
+    println!("{:?}", a.grad_result()?.data());
+    assert_eq!(*a.grad_result()?.data(), 2.0.into());
+    println!("{:?}", b.grad_result()?.data());
+    assert_eq!(*b.grad_result()?.data(), 3.0.into());
+
+    Ok(())
+}
