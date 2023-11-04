@@ -437,3 +437,45 @@ fn step22() {
     println!("{}", y);
     assert_eq!(*y.data(), 8.0.into());
 }
+
+#[test]
+fn step24() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::pow;
+    use kdezero::test_utility::assert_approx_eq_tensor;
+
+    fn sphere(x: &Variable, y: &Variable) -> Result<Variable> {
+        Ok(pow(x, 2.0)? + pow(y, 2.0)?)
+    }
+
+    let x = Variable::from(1.0);
+    let y = Variable::from(1.0);
+    let mut z = sphere(&x, &y)?;
+    z.backward()?;
+    println!("{:?}", x.grad_result()?.data());
+    assert_eq!(*x.grad_result()?.data(), 2.0.into());
+    println!("{:?}", y.grad_result()?.data());
+    assert_eq!(*y.grad_result()?.data(), 2.0.into());
+
+    fn matyas(x: &Variable, y: &Variable) -> Result<Variable> {
+        let z0 = (pow(x, 2.0)? + pow(y, 2.0)?) * 0.26.into();
+        let z1 = x * y * 0.48.into();
+        Ok(z0 - z1)
+    }
+
+    let x = Variable::from(1.0);
+    let y = Variable::from(1.0);
+    let mut z = matyas(&x, &y)?;
+    z.backward()?;
+    println!("{:?}", x.grad_result()?.data());
+    assert_approx_eq_tensor(
+        x.grad_result()?.data().to_f64_tensor()?,
+        &Tensor::scalar(0.040000000000000036), 1e-4);
+    println!("{:?}", y.grad_result()?.data());
+    assert_approx_eq_tensor(
+        y.grad_result()?.data().to_f64_tensor()?,
+        &Tensor::scalar(0.040000000000000036), 1e-4);
+
+    Ok(())
+}
