@@ -393,3 +393,47 @@ fn step20() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step21() {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+
+    let x = Variable::from(2.0);
+    let y = x + Tensor::scalar(3.0).into();
+    println!("{:?}", y.data());
+    assert_eq!(*y.data(), 5.0.into());
+
+    let x = Variable::from(2.0);
+    let y = x + 3.0.into();
+    println!("{:?}", y.data());
+    assert_eq!(*y.data(), 5.0.into());
+}
+
+#[test]
+fn step22() {
+    use kdezero::Variable;
+    use kdezero::function::pow;
+
+    let x = Variable::from(2.0);
+    let y = -x;
+    println!("{}", y);
+    assert_eq!(*y.data(), (-2.0).into());
+
+    let x0 = Variable::from(2.0);
+    let x1 = Variable::from(3.0);
+    let y = x0 - x1;
+    println!("{}", y);
+    assert_eq!(*y.data(), (-1.0).into());
+
+    let x0 = Variable::from(2.0);
+    let x1 = Variable::from(3.0);
+    let y = x0 / x1;
+    println!("{}", y);
+    assert_eq!(*y.data(), (2.0 / 3.0).into());
+
+    let x = Variable::from(2.0);
+    let y = pow(&x, 3.0).unwrap();
+    println!("{}", y);
+    assert_eq!(*y.data(), 8.0.into());
+}

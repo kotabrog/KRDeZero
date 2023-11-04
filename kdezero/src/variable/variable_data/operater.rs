@@ -70,6 +70,33 @@ impl VariableData {
         })
     }
 
+    pub fn div(&self, other: &VariableData) -> Result<VariableData> {
+        Ok(match (self, other) {
+            (VariableData::F32(x), VariableData::F32(y)) => (x / y).into(),
+            (VariableData::F64(x), VariableData::F64(y)) => (x / y).into(),
+            (VariableData::I32(x), VariableData::I32(y)) => (x / y).into(),
+            (VariableData::I64(x), VariableData::I64(y)) => (x / y).into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) => (x / y).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "div".to_string(),
+                format!("{:?}, {:?}", self.data_type(), other.data_type()),
+            ).into()),
+        })
+    }
+
+    pub fn neg(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => (-x).into(),
+            VariableData::F64(x) => (-x).into(),
+            VariableData::I32(x) => (-x).into(),
+            VariableData::I64(x) => (-x).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "neg".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
     pub fn scalar_add(&self, value: f64) -> Result<VariableData> {
         Ok(match self {
             VariableData::F32(x) => (x + value as f32).into(),
@@ -93,6 +120,20 @@ impl VariableData {
             VariableData::USIZE(x) => (x * value as usize).into(),
             _ => return Err(KDeZeroError::NotImplementedType(
                 "scalar_mul".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn pow(&self, n: f64) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.powf(n as f32).into(),
+            VariableData::F64(x) => x.powf(n).into(),
+            VariableData::I32(x) => x.pow(n as u32).into(),
+            VariableData::I64(x) => x.pow(n as u32).into(),
+            VariableData::USIZE(x) => x.pow(n as u32).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "pow".to_string(),
                 self.data_type().to_string(),
             ).into()),
         })
@@ -230,6 +271,56 @@ mod tests {
     }
 
     #[test]
+    fn div_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = VariableData::from(3.0f32);
+        let z = x.div(&y)?;
+        assert_eq!(z, VariableData::from(2.0f32 / 3.0f32));
+        Ok(())
+    }
+
+    #[test]
+    fn error_div_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        let y = VariableData::from(false);
+        match x.div(&y) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e, KDeZeroError::NotImplementedType(
+                    "div".to_string(),
+                    format!("{:?}, {:?}", x.data_type(), y.data_type()),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn neg_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.neg()?;
+        assert_eq!(y, VariableData::from(-2.0f32));
+        Ok(())
+    }
+
+    #[test]
+    fn error_neg_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        match x.neg() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e, KDeZeroError::NotImplementedType(
+                    "neg".to_string(),
+                    x.data_type().to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn scalar_add_f32() -> Result<()> {
         let x = VariableData::from(2.0f32);
         let y = x.scalar_add(3.0)?;
@@ -272,6 +363,40 @@ mod tests {
                     "scalar_mul".to_string(),
                     x.data_type().to_string(),
                 ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn pow_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.pow(3.0)?;
+        assert_eq!(y, VariableData::from(8.0f32));
+        Ok(())
+    }
+
+    #[test]
+    fn pow_i32() -> Result<()> {
+        let x = VariableData::from(2i32);
+        let y = x.pow(3.0)?;
+        assert_eq!(y, VariableData::from(8i32));
+        Ok(())
+    }
+
+    #[test]
+    fn error_pow_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        match x.pow(3.0) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e,
+                    KDeZeroError::NotImplementedType(
+                        "pow".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
             }
         }
         Ok(())
