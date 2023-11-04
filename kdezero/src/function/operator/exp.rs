@@ -28,6 +28,10 @@ impl FunctionContent for Exp {
         let gx = gy.mul(&x.exp()?)?;
         Ok(vec![gx.into()])
     }
+
+    fn name(&self) -> String {
+        "Exp".to_string()
+    }
 }
 
 pub fn exp(x: &Variable) -> Result<Variable> {

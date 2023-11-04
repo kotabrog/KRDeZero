@@ -29,6 +29,10 @@ impl FunctionContent for Add {
         let gx1 = gy.clone();
         Ok(vec![gx0.into(), gx1.into()])
     }
+
+    fn name(&self) -> String {
+        "Add".to_string()
+    }
 }
 
 pub fn add(x0: &Variable, x1: &Variable) -> Result<Variable> {

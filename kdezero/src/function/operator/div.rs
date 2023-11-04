@@ -31,6 +31,10 @@ impl FunctionContent for Div {
         let gx1 = gy.mul(&x0.neg()?.div(&x1.square()?)?)?;
         Ok(vec![gx0.into(), gx1.into()])
     }
+
+    fn name(&self) -> String {
+        "Div".to_string()
+    }
 }
 
 pub fn div(x0: &Variable, x1: &Variable) -> Result<Variable> {

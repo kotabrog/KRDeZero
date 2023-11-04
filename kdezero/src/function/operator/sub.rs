@@ -29,6 +29,10 @@ impl FunctionContent for Sub {
         let gx1 = gy.neg()?;
         Ok(vec![gx0.into(), gx1.into()])
     }
+
+    fn name(&self) -> String {
+        "Sub".to_string()
+    }
 }
 
 pub fn sub(x0: &Variable, x1: &Variable) -> Result<Variable> {

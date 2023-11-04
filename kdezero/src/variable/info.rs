@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::cell::Ref;
 use super::Variable;
 
@@ -20,5 +21,9 @@ impl Variable {
     pub fn data_type(&self) -> Ref<str> {
         let inner = self.inner.borrow();
         Ref::map(inner, |inner| inner.data.data_type())
+    }
+
+    pub(crate) fn id(&self) -> usize {
+        Rc::as_ptr(&self.inner) as usize
     }
 }

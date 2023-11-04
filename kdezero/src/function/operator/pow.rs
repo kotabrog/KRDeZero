@@ -31,6 +31,10 @@ impl FunctionContent for Pow {
             .mul(&gy)?.scalar_mul(self.c)?;
         Ok(vec![gx.into()])
     }
+
+    fn name(&self) -> String {
+        "Pow".to_string()
+    }
 }
 
 pub fn pow(x: &Variable, c: f64) -> Result<Variable> {

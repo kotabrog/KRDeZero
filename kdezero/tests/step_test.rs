@@ -479,3 +479,36 @@ fn step24() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step26() -> Result<()> {
+    use std::fs::create_dir;
+    use kdezero::Variable;
+    use kdezero::function::pow;
+    use kdezero::plot_dot_graph;
+
+    fn matyas(x: &Variable, y: &Variable) -> Result<Variable> {
+        let z0 = (pow(x, 2.0)? + pow(y, 2.0)?) * 0.26.into();
+        let z1 = x * y * 0.48.into();
+        Ok(z0 - z1)
+    }
+
+    let mut x = Variable::from(1.0);
+    let mut y = Variable::from(1.0);
+    let mut z = matyas(&x, &y)?;
+    z.backward()?;
+
+    x.set_name("x");
+    y.set_name("y");
+    z.set_name("z");
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    plot_dot_graph(&z, "output/step26", true, false)?;
+    plot_dot_graph(&z, "output/step26_verbose", true, true)?;
+
+    Ok(())
+}

@@ -27,6 +27,10 @@ impl FunctionContent for Neg {
         let gx = gy.neg()?;
         Ok(vec![gx.into()])
     }
+
+    fn name(&self) -> String {
+        "Neg".to_string()
+    }
 }
 
 pub fn neg(x: &Variable) -> Result<Variable> {

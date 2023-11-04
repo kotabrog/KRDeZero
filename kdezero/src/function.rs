@@ -19,6 +19,9 @@ pub trait FunctionContent: std::fmt::Debug {
     fn backward(&self, _xs: Vec<&Variable>, _gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         unimplemented!("backward is not implemented")
     }
+    fn name(&self) -> String {
+        format!("")
+    }
 }
 
 #[derive(Debug)]
@@ -96,6 +99,15 @@ impl Function {
     fn set_generation(&mut self, generation: usize) {
         let mut inner = self.inner.borrow_mut();
         inner.generation = generation;
+    }
+
+    pub fn function_name(&self) -> String {
+        let inner = self.inner.borrow();
+        inner.func.name()
+    }
+
+    pub(crate) fn id(&self) -> usize {
+        Rc::as_ptr(&self.inner) as usize
     }
 
     pub fn forward(&mut self, xs: &[Variable]) -> Result<Vec<Variable>> {

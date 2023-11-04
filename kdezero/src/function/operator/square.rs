@@ -28,6 +28,10 @@ impl FunctionContent for Square {
         let gx = gy.mul(&x.scalar_mul(2.0)?)?;
         Ok(vec![gx.into()])
     }
+
+    fn name(&self) -> String {
+        "Square".to_string()
+    }
 }
 
 pub fn square(x: &Variable) -> Result<Variable> {
