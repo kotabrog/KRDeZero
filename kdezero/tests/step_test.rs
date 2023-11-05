@@ -693,7 +693,6 @@ fn step34() -> Result<()> {
         let mut gx = x.grad_result()?;
         x.clear_grad();
         gx.backward_create_graph()?;
-        println!("{}", x.grad_result()?);
         logs.push(gx.data().to_f64_tensor()?.to_vector()?);
     }
 
@@ -776,6 +775,25 @@ fn step35() -> Result<()> {
     let mut gx = x.grad_result()?;
     gx.set_name("gx");
     plot_dot_graph(&gx, "output/step35", true, false)?;
+
+    Ok(())
+}
+
+#[test]
+fn step36() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::pow;
+
+    let mut x = Variable::from(2.0);
+    let mut y = pow(&x, 2.0)?;
+    y.backward_create_graph()?;
+    let gx = x.grad_result()?;
+    x.clear_grad();
+
+    let mut z = pow(&gx, 3.0)? + y;
+    z.backward()?;
+    println!("{}", x.grad_result()?);
+    assert_eq!(*x.grad_result()?.data(), 100.0.into());
 
     Ok(())
 }
