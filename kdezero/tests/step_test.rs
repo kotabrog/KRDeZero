@@ -572,3 +572,44 @@ fn step27() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step28() -> Result<()> {
+    use kdezero::{Variable, VariableData};
+    use kdezero::function::pow;
+
+    fn resenbrock(x0: &Variable, x1: &Variable) -> Result<Variable> {
+        let y = pow(&(x1 - &pow(x0, 2.0)?), 2.0)? * 100.0.into()
+            + pow(&(x0 - &1.0.into()), 2.0)?;
+        Ok(y)
+    }
+
+    let mut x0 = Variable::from(0.0);
+    let mut x1 = Variable::from(2.0);
+    let lr = 0.001;
+    let lr = VariableData::from(lr);
+    let iters = 1000;
+
+    for i in 0..iters {
+        let mut y = resenbrock(&x0, &x1)?;
+        x0.clear_grad();
+        x1.clear_grad();
+        y.backward()?;
+
+        let new_x0 =
+            x0.data()
+            .sub(&x0.grad_result()?.data().mul(&lr)?)?;
+        x0.set_data(new_x0);
+
+        let new_x1 =
+            x1.data()
+            .sub(&x1.grad_result()?.data().mul(&lr)?)?;
+        x1.set_data(new_x1);
+
+        if i % 100 == 0 {
+            println!("{} {:.10} {:.10}", i, x0.data(), x1.data());
+        }
+    }
+
+    Ok(())
+}
