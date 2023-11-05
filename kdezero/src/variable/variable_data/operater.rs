@@ -3,31 +3,6 @@ use super::VariableData;
 use crate::error::KDeZeroError;
 
 impl VariableData {
-    pub fn square(&self) -> Result<VariableData> {
-        Ok(match self {
-            VariableData::F32(x) => (x * x).into(),
-            VariableData::F64(x) => (x * x).into(),
-            VariableData::I32(x) => (x * x).into(),
-            VariableData::I64(x) => (x * x).into(),
-            VariableData::USIZE(x) => (x * x).into(),
-            _ => return Err(KDeZeroError::NotImplementedType(
-                "square".to_string(),
-                self.data_type().to_string(),
-            ).into()),
-        })
-    }
-
-    pub fn exp(&self) -> Result<VariableData> {
-        Ok(match self {
-            VariableData::F32(x) => x.exp().into(),
-            VariableData::F64(x) => x.exp().into(),
-            _ => return Err(KDeZeroError::NotImplementedType(
-                "exp".to_string(),
-                self.data_type().to_string(),
-            ).into()),
-        })
-    }
-
     pub fn add(&self, other: &VariableData) -> Result<VariableData> {
         Ok(match (self, other) {
             (VariableData::F32(x), VariableData::F32(y)) => (x + y).into(),
@@ -125,6 +100,31 @@ impl VariableData {
         })
     }
 
+    pub fn square(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => (x * x).into(),
+            VariableData::F64(x) => (x * x).into(),
+            VariableData::I32(x) => (x * x).into(),
+            VariableData::I64(x) => (x * x).into(),
+            VariableData::USIZE(x) => (x * x).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "square".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn exp(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.exp().into(),
+            VariableData::F64(x) => x.exp().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "exp".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
     pub fn pow(&self, n: f64) -> Result<VariableData> {
         Ok(match self {
             VariableData::F32(x) => x.powf(n as f32).into(),
@@ -138,59 +138,33 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn sin(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.sin().into(),
+            VariableData::F64(x) => x.sin().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "sin".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn cos(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.cos().into(),
+            VariableData::F64(x) => x.cos().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "cos".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn square_f32() -> Result<()> {
-        let x = VariableData::from(2.0f32);
-        let y = x.square()?;
-        assert_eq!(y, VariableData::from(4.0f32));
-        Ok(())
-    }
-
-    #[test]
-    fn error_square_bool() -> Result<()> {
-        let x = VariableData::from(true);
-        match x.square() {
-            Ok(_) => panic!("error"),
-            Err(e) => {
-                let e = e.downcast::<KDeZeroError>()?;
-                assert_eq!(e, KDeZeroError::NotImplementedType(
-                    "square".to_string(),
-                    x.data_type().to_string(),
-                ));
-            }
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn exp_f32() -> Result<()> {
-        let x = VariableData::from(2.0f32);
-        let y = x.exp()?;
-        assert_eq!(y, VariableData::from(2.0f32.exp()));
-        Ok(())
-    }
-
-    #[test]
-    fn error_exp_bool() -> Result<()> {
-        let x = VariableData::from(true);
-        match x.exp() {
-            Ok(_) => panic!("error"),
-            Err(e) => {
-                let e = e.downcast::<KDeZeroError>()?;
-                assert_eq!(e, KDeZeroError::NotImplementedType(
-                    "exp".to_string(),
-                    x.data_type().to_string(),
-                ));
-            }
-        }
-        Ok(())
-    }
 
     #[test]
     fn add_f32() -> Result<()> {
@@ -369,6 +343,54 @@ mod tests {
     }
 
     #[test]
+    fn square_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.square()?;
+        assert_eq!(y, VariableData::from(4.0f32));
+        Ok(())
+    }
+
+    #[test]
+    fn error_square_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        match x.square() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e, KDeZeroError::NotImplementedType(
+                    "square".to_string(),
+                    x.data_type().to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn exp_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.exp()?;
+        assert_eq!(y, VariableData::from(2.0f32.exp()));
+        Ok(())
+    }
+
+    #[test]
+    fn error_exp_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        match x.exp() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(e, KDeZeroError::NotImplementedType(
+                    "exp".to_string(),
+                    x.data_type().to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn pow_f32() -> Result<()> {
         let x = VariableData::from(2.0f32);
         let y = x.pow(3.0)?;
@@ -394,6 +416,60 @@ mod tests {
                 assert_eq!(e,
                     KDeZeroError::NotImplementedType(
                         "pow".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn sin_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.sin()?;
+        assert_eq!(y, VariableData::from(2.0f32.sin()));
+        Ok(())
+    }
+
+    #[test]
+    fn error_sin_i32() -> Result<()> {
+        let x = VariableData::from(2i32);
+        match x.sin() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "sin".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn cos_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.cos()?;
+        assert_eq!(y, VariableData::from(2.0f32.cos()));
+        Ok(())
+    }
+
+    #[test]
+    fn error_cos_i32() -> Result<()> {
+        let x = VariableData::from(2i32);
+        match x.cos() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "cos".to_string(),
                         x.data_type().to_string(),
                     )
                 );

@@ -6,6 +6,7 @@ mod neg;
 mod sub;
 mod div;
 mod pow;
+mod sin;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -15,3 +16,4 @@ pub use neg::{Neg, neg};
 pub use sub::{Sub, sub};
 pub use div::{Div, div};
 pub use pow::{Pow, pow};
+pub use sin::{Sin, sin};

@@ -512,3 +512,63 @@ fn step26() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step27() -> Result<()> {
+    use std::f64::consts::FRAC_PI_4;
+    use std::fs::create_dir;
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::{sin, pow};
+    use kdezero::plot_dot_graph;
+    use kdezero::test_utility::assert_approx_eq_tensor;
+
+    let x = Variable::from(FRAC_PI_4);
+    let mut y = sin(&x)?;
+    y.backward()?;
+
+    println!("{}", y);
+    assert_eq!(*y.data(), FRAC_PI_4.sin().into());
+
+    println!("{}", x.grad_result()?);
+    assert_eq!(*x.grad_result()?.data(), FRAC_PI_4.cos().into());
+
+    fn my_sin(x: &Variable, threshold: f64) -> Result<Variable> {
+        let mut y = Variable::from(0.0);
+        for i in 0..100000 {
+            let mut c = if i % 2 == 0 { 1.0 } else { -1.0 };
+            for j in 1..=(2 * i + 1) {
+                c /= j as f64;
+            }
+            let t = pow(x, 2.0 * i as f64 + 1.0)? * c.into();
+            y = &y + &t;
+            if t.data().to_f64_tensor()?.to_scalar()?.abs() < threshold {
+                break;
+            }
+        }
+        Ok(y.into())
+    }
+
+    let x = Variable::new_with_name(FRAC_PI_4.into(), "x");
+    let mut y = my_sin(&x, 1e-4)?;
+    y.set_name("y");
+    y.backward()?;
+
+    println!("{}", y);
+    assert_approx_eq_tensor(
+        y.data().to_f64_tensor()?,
+        &Tensor::scalar(FRAC_PI_4.sin()), 1e-4);
+    println!("{}", x.grad_result()?);
+    assert_approx_eq_tensor(
+        x.grad_result()?.data().to_f64_tensor()?,
+        &Tensor::scalar(FRAC_PI_4.cos()), 1e-4);
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    plot_dot_graph(&y, "output/step27", true, false)?;
+
+    Ok(())
+}
