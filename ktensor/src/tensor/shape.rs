@@ -58,6 +58,17 @@ where
         new_tensor
     }
 
+    /// Flatten the tensor
+    /// 
+    /// # Returns
+    /// 
+    /// * `Self` - Flattened tensor
+    pub fn flatten(&self) -> Self {
+        Self::new(
+            self.data.clone(), vec![self.data.len()]
+        ).unwrap()
+    }
+
     /// Broadcast the tensor
     /// 
     /// # Arguments
@@ -191,6 +202,30 @@ mod tests {
         let x = x.transpose();
         assert_eq!(x.get_shape(), &[3]);
         assert_eq!(x.get_data(), &[0.0, 1.0, 2.0]);
+    }
+
+    #[test]
+    fn flatten_normal() {
+        let x = Tensor::new([0.0, 1.0, 2.0, 3.0], [2, 2]).unwrap();
+        let x = x.flatten();
+        assert_eq!(x.get_shape(), &[4]);
+        assert_eq!(x.get_data(), &[0.0, 1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn flatten_zero_dim() {
+        let x = Tensor::new([0.0], []).unwrap();
+        let x = x.flatten();
+        assert_eq!(x.get_shape(), &[1]);
+        assert_eq!(x.get_data(), &[0.0]);
+    }
+
+    #[test]
+    fn flatten_empty() {
+        let x = Tensor::<f64>::new([], [0]).unwrap();
+        let x = x.flatten();
+        assert_eq!(x.get_shape(), &[0]);
+        assert_eq!(x.get_data(), &[]);
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use num_traits::{NumCast, Zero, One};
+use num_traits::{NumCast, Zero, One, Float};
 use super::Tensor;
 use crate::error::TensorError;
 
@@ -36,6 +36,40 @@ where
             .collect();
         let data = data?;
         Ok(Self { data, shape })
+    }
+}
+
+impl<T> Tensor<T>
+where
+    T: Float
+{
+    /// Create equally spaced tensor by the specified start, end, and number of samples
+    /// 
+    /// # Arguments
+    /// 
+    /// * `start` - The starting value of the sequence
+    /// * `end` - The end value of the sequence
+    /// * `num` - Number of samples to generate
+    /// 
+    /// # Returns
+    /// 
+    /// * `Self` - Equally spaced tensor
+    pub fn linspace(start: T, end: T, num: usize) -> Self {
+        if num == 0 {
+            return Self {
+                data: vec![],
+                shape: vec![0],
+            }
+        }
+        let mut data = Vec::with_capacity(num);
+        let step = (end - start) / T::from(num - 1).unwrap();
+        for i in 0..num {
+            data.push(start + step * T::from(i).unwrap());
+        }
+        Self {
+            data,
+            shape: vec![num],
+        }
     }
 }
 
@@ -194,6 +228,34 @@ mod tests {
                 assert_eq!(e, TensorError::CastError("i8".to_string()))
             }
         }
+    }
+
+    #[test]
+    fn linspace_normal() {
+        let x = Tensor::<f32>::linspace(0.0, 1.0, 5);
+        assert_eq!(x.get_data(), &vec![0.0, 0.25, 0.5, 0.75, 1.0]);
+        assert_eq!(x.get_shape(), &vec![5]);
+    }
+
+    #[test]
+    fn linspace_zero() {
+        let x = Tensor::<f32>::linspace(0.0, 1.0, 0);
+        assert_eq!(x.get_data(), &vec![]);
+        assert_eq!(x.get_shape(), &vec![0]);
+    }
+
+    #[test]
+    fn linspace_start_equal_end() {
+        let x = Tensor::<f32>::linspace(0.0, 0.0, 5);
+        assert_eq!(x.get_data(), &vec![0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_eq!(x.get_shape(), &vec![5]);
+    }
+
+    #[test]
+    fn linspace_start_greater_than_end() {
+        let x = Tensor::<f32>::linspace(1.0, 0.0, 5);
+        assert_eq!(x.get_data(), &vec![1.0, 0.75, 0.5, 0.25, 0.0]);
+        assert_eq!(x.get_shape(), &vec![5]);
     }
 
     #[test]

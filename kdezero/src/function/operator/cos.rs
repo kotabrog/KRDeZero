@@ -1,23 +1,23 @@
 use anyhow::Result;
 use crate::Variable;
-use super::{mul, cos};
+use super::{mul, sin, neg};
 use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
 #[derive(Debug)]
-pub struct Sin {}
+pub struct Cos {}
 
-impl Sin {
+impl Cos {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl FunctionContent for Sin {
+impl FunctionContent for Cos {
     fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         let x = xs[0].data();
-        let y = x.sin()?;
+        let y = x.cos()?;
         Ok(vec![y.into()])
     }
 
@@ -26,17 +26,17 @@ impl FunctionContent for Sin {
         check_variable_count(&gys, 1)?;
         let x = xs[0];
         let gy = gys[0];
-        let gx = mul(&gy, &cos(x)?)?;
+        let gx = neg(&mul(&gy, &sin(x)?)?)?;
         Ok(vec![gx])
     }
 
     fn name(&self) -> String {
-        "Sin".to_string()
+        "Cos".to_string()
     }
 }
 
-pub fn sin(x: &Variable) -> Result<Variable> {
-    let mut func = Function::new(Sin::new());
+pub fn cos(x: &Variable) -> Result<Variable> {
+    let mut func = Function::new(Cos::new());
     let mut ys = func.forward(&[x.clone()])?;
     let y = ys.remove(0);
     Ok(y)
@@ -48,17 +48,17 @@ mod tests {
     use crate::error::KDeZeroError;
 
     #[test]
-    fn sin_forward() -> Result<()> {
+    fn cos_forward() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        let y = Sin::new().forward(vec![&x])?;
-        assert_eq!(*y[0].data(), std::f64::consts::FRAC_PI_4.sin().into());
+        let y = Cos::new().forward(vec![&x])?;
+        assert_eq!(*y[0].data(), std::f64::consts::FRAC_PI_4.cos().into());
         Ok(())
     }
 
     #[test]
-    fn error_sin_forward_invalid_variable_count() -> Result<()> {
+    fn error_cos_forward_invalid_variable_count() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        match Sin::new().forward(vec![&x.clone(), &x]) {
+        match Cos::new().forward(vec![&x.clone(), &x]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;
@@ -72,20 +72,20 @@ mod tests {
     }
 
     #[test]
-    fn sin_backward() -> Result<()> {
+    fn cos_backward() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
+        let f = Cos::new();
         let dx = f.backward(vec![&x], vec![&dy])?;
-        assert_eq!(*dx[0].data(), (3.0 * std::f64::consts::FRAC_PI_4.cos()).into());
+        assert_eq!(*dx[0].data(), (-3.0 * std::f64::consts::FRAC_PI_4.sin()).into());
         Ok(())
     }
 
     #[test]
-    fn error_sin_backward_invalid_variable_count_dy() -> Result<()> {
+    fn error_cos_backward_invalid_variable_count_dy() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
+        let f = Cos::new();
         match f.backward(vec![&x], vec![&dy, &dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
@@ -100,10 +100,10 @@ mod tests {
     }
 
     #[test]
-    fn error_sin_backward_invalid_variable_count_x() -> Result<()> {
+    fn error_cos_backward_invalid_variable_count_x() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
+        let f = Cos::new();
         match f.backward(vec![&x, &x], vec![&dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
@@ -118,10 +118,10 @@ mod tests {
     }
 
     #[test]
-    fn sin_normal() -> Result<()> {
+    fn cos_normal() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        let y = sin(&x)?;
-        assert_eq!(*y.data(), std::f64::consts::FRAC_PI_4.sin().into());
+        let y = cos(&x)?;
+        assert_eq!(*y.data(), std::f64::consts::FRAC_PI_4.cos().into());
         Ok(())
     }
 }

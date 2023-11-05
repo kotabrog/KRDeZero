@@ -662,3 +662,93 @@ fn step33() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step34() -> Result<()> {
+    use std::fs::create_dir;
+    use plotters::prelude::*;
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::sin;
+
+    let mut x = Variable::from(1.0);
+    let mut y = sin(&x)?;
+    y.backward_create_graph()?;
+
+    for _ in 0..3 {
+        let mut gx = x.grad_result()?;
+        x.clear_grad();
+        gx.backward_create_graph()?;
+        println!("{}", x.grad_result()?);
+    }
+
+    let mut x = Variable::from(Tensor::linspace(-7.0, 7.0, 200));
+    let mut y = sin(&x)?;
+    y.backward_create_graph()?;
+
+    let mut logs = Vec::new();
+    logs.push(y.data().to_f64_tensor()?.to_vector()?);
+
+    for _ in 0..3 {
+        let mut gx = x.grad_result()?;
+        x.clear_grad();
+        gx.backward_create_graph()?;
+        println!("{}", x.grad_result()?);
+        logs.push(gx.data().to_f64_tensor()?.to_vector()?);
+    }
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    let root = BitMapBackend::new("output/step34.png", (640, 480)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .margin(10)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d(
+            -7.0f64..7.0f64,
+            -1.5f64..1.5f64
+        )?;
+
+    chart.configure_mesh().draw()?;
+
+    let styles = [
+        ShapeStyle::from(&RED).filled(),
+        ShapeStyle::from(&GREEN).filled(),
+        ShapeStyle::from(&BLUE).filled(),
+        ShapeStyle::from(&CYAN).filled(),
+    ];
+
+    let xs = Tensor::linspace(-7.0, 7.0, 200)
+        .to_vector()?;
+
+    let labels = [
+        "y=sin(x)",
+        "y'",
+        "y''",
+        "y'''",
+    ];
+
+    for i in 0..4 {
+        chart.draw_series(
+            LineSeries::new(
+                logs[i].iter().enumerate().map(|(j, y)| (xs[j], *y)),
+                styles[i].clone()
+            )
+        )?.label(labels[i])
+        .legend(move |(x, y)|
+            Rectangle::new([(x, y - 5), (x + 10, y + 5)], styles[i].clone()));
+    }
+
+    chart.configure_series_labels()
+        .background_style(&WHITE.mix(0.8))
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    Ok(())
+}

@@ -16,6 +16,8 @@ pub enum TensorError {
     NotScalarError(Vec<usize>),
     #[error("NotVectorError: shape: {0:?}")]
     NotVectorError(Vec<usize>),
+    #[error("InvalidArgumentError: {0}")]
+    InvalidArgumentError(String),
 }
 
 #[cfg(test)]
@@ -130,6 +132,22 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<TensorError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "NotVectorError: shape: [1, 2]");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_invalid_argument() -> Result<()> {
+        Err(TensorError::InvalidArgumentError("Error".to_string()).into())
+    }
+
+    #[test]
+    fn tensor_error_invalid_argument() -> Result<()> {
+        match error_invalid_argument() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "InvalidArgumentError: Error");
                 Ok(())
             }
         }
