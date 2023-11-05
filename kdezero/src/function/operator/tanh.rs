@@ -1,42 +1,45 @@
 use anyhow::Result;
 use crate::Variable;
-use super::{mul, cos};
+use super::{mul, sub, square};
 use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
 #[derive(Debug)]
-pub struct Sin {}
+pub struct Tanh {}
 
-impl Sin {
+impl Tanh {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl FunctionContent for Sin {
+impl FunctionContent for Tanh {
     fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         let x = xs[0].data();
-        let y = x.sin()?;
+        let y = x.tanh()?;
         Ok(vec![y.into()])
     }
 
-    fn backward(&self, xs: Vec<&Variable>, _ys: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
-        check_variable_count(&xs, 1)?;
+    fn backward(&self, _xs: Vec<&Variable>, ys: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
+        check_variable_count(&ys, 1)?;
         check_variable_count(&gys, 1)?;
-        let x = xs[0];
+        let y = ys[0];
         let gy = gys[0];
-        let gx = mul(&gy, &cos(x)?)?;
+        let gx = mul(
+            gy,
+            &sub(&y.data().full_like(1.0)?.into(), &square(y)?)?
+        )?;
         Ok(vec![gx])
     }
 
     fn name(&self) -> String {
-        "Sin".to_string()
+        "Tanh".to_string()
     }
 }
 
-pub fn sin(x: &Variable) -> Result<Variable> {
-    let mut func = Function::new(Sin::new());
+pub fn tanh(x: &Variable) -> Result<Variable> {
+    let mut func = Function::new(Tanh::new());
     let mut ys = func.forward(&[x.clone()])?;
     let y = ys.remove(0);
     Ok(y)
@@ -48,17 +51,17 @@ mod tests {
     use crate::error::KDeZeroError;
 
     #[test]
-    fn sin_forward() -> Result<()> {
+    fn tanh_forward() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        let y = Sin::new().forward(vec![&x])?;
-        assert_eq!(*y[0].data(), std::f64::consts::FRAC_PI_4.sin().into());
+        let y = Tanh::new().forward(vec![&x])?;
+        assert_eq!(*y[0].data(), std::f64::consts::FRAC_PI_4.tanh().into());
         Ok(())
     }
 
     #[test]
-    fn error_sin_forward_invalid_variable_count() -> Result<()> {
+    fn error_tanh_forward_invalid_variable_count() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        match Sin::new().forward(vec![&x.clone(), &x]) {
+        match Tanh::new().forward(vec![&x.clone(), &x]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;
@@ -72,21 +75,23 @@ mod tests {
     }
 
     #[test]
-    fn sin_backward() -> Result<()> {
+    fn tanh_backward() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
-        let dx = f.backward(vec![&x], vec![], vec![&dy])?;
-        assert_eq!(*dx[0].data(), (3.0 * std::f64::consts::FRAC_PI_4.cos()).into());
+        let f = Tanh::new();
+        let y = f.forward(vec![&x])?;
+        let dx = f.backward(vec![&x], vec![&y[0]], vec![&dy])?;
+        assert_eq!(*dx[0].data(), (3.0 * (1.0 - y[0].data().to_f64_tensor()?.to_scalar()?.powi(2))).into());
         Ok(())
     }
 
     #[test]
-    fn error_sin_backward_invalid_variable_count_dy() -> Result<()> {
+    fn error_tanh_backward_invalid_variable_count_dy() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
-        match f.backward(vec![&x], vec![], vec![&dy, &dy]) {
+        let f = Tanh::new();
+        let y = f.forward(vec![&x])?;
+        match f.backward(vec![&x], vec![&y[0]], vec![&dy, &dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;
@@ -100,11 +105,12 @@ mod tests {
     }
 
     #[test]
-    fn error_sin_backward_invalid_variable_count_x() -> Result<()> {
+    fn error_tanh_backward_invalid_variable_count_y() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
-        let f = Sin::new();
-        match f.backward(vec![&x, &x], vec![], vec![&dy]) {
+        let f = Tanh::new();
+        let y = f.forward(vec![&x])?;
+        match f.backward(vec![&x], vec![&y[0], &y[0]], vec![&dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;
@@ -118,10 +124,10 @@ mod tests {
     }
 
     #[test]
-    fn sin_normal() -> Result<()> {
+    fn tanh_normal() -> Result<()> {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
-        let y = sin(&x)?;
-        assert_eq!(*y.data(), std::f64::consts::FRAC_PI_4.sin().into());
+        let y = tanh(&x)?;
+        assert_eq!(*y.data(), std::f64::consts::FRAC_PI_4.tanh().into());
         Ok(())
     }
 }

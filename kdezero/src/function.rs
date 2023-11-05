@@ -10,13 +10,13 @@ use crate::error::KDeZeroError;
 use crate::is_no_grad_enabled;
 
 pub use operator::{
-    Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos,
-    exp, square, add, mul, neg, sub, div, pow, sin, cos,
+    Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos, Tanh,
+    exp, square, add, mul, neg, sub, div, pow, sin, cos, tanh,
 };
 
 pub trait FunctionContent: std::fmt::Debug {
     fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>>;
-    fn backward(&self, _xs: Vec<&Variable>, _gys: Vec<&Variable>) -> Result<Vec<Variable>> {
+    fn backward(&self, _xs: Vec<&Variable>, _ys: Vec<&Variable>, _gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         unimplemented!("backward is not implemented")
     }
     fn name(&self) -> String {
@@ -149,16 +149,25 @@ impl Function {
     pub fn backward(&self, gys: &[Variable]) -> Result<Vec<Variable>> {
         let inner = &mut self.inner.borrow_mut();
         let xs = inner.inputs.as_ref()
-            .ok_or(KDeZeroError::NoInputVariable(inner.name.clone()))?;
-        let xs = xs
+            .ok_or(KDeZeroError::NoInputVariable(inner.name.clone()))?
             .iter()
             .map(|x| x)
+            .collect::<Vec<_>>();
+        let ys = inner.outputs.as_ref()
+            .ok_or(KDeZeroError::NoOutputVariable(inner.name.clone()))?
+            .iter()
+            .map(|y| y.upgrade())
+            .collect::<Option<Vec<_>>>()
+            .ok_or(KDeZeroError::NoOutputVariable(inner.name.clone()))?;
+        let ys = ys
+            .iter()
+            .map(|y| y)
             .collect::<Vec<_>>();
         let gys = gys
             .iter()
             .map(|x| x)
             .collect::<Vec<_>>();
-        let gxs = inner.func.backward(xs, gys)?;
+        let gxs = inner.func.backward(xs, ys, gys)?;
         Ok(gxs)
     }
 }

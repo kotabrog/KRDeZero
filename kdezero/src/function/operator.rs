@@ -8,6 +8,7 @@ mod div;
 mod pow;
 mod sin;
 mod cos;
+mod tanh;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -19,3 +20,4 @@ pub use div::{Div, div};
 pub use pow::{Pow, pow};
 pub use sin::{Sin, sin};
 pub use cos::{Cos, cos};
+pub use tanh::{Tanh, tanh};

@@ -160,6 +160,17 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn tanh(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.tanh().into(),
+            VariableData::F64(x) => x.tanh().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "tanh".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -470,6 +481,33 @@ mod tests {
                     e,
                     KDeZeroError::NotImplementedType(
                         "cos".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn tanh_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.tanh()?;
+        assert_eq!(y, VariableData::from(2.0f32.tanh()));
+        Ok(())
+    }
+
+    #[test]
+    fn error_tanh_i32() -> Result<()> {
+        let x = VariableData::from(2i32);
+        match x.tanh() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "tanh".to_string(),
                         x.data_type().to_string(),
                     )
                 );

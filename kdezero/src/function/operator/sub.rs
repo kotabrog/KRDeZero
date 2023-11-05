@@ -22,7 +22,7 @@ impl FunctionContent for Sub {
         Ok(vec![y.into()])
     }
 
-    fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
+    fn backward(&self, xs: Vec<&Variable>, _ys: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 2)?;
         check_variable_count(&gys, 1)?;
         let gy = gys[0];
@@ -78,7 +78,7 @@ mod tests {
         let x1 = Variable::from(3.0);
         let dy = Variable::from(4.0);
         let f = Sub::new();
-        let dx = f.backward(vec![&x0, &x1], vec![&dy])?;
+        let dx = f.backward(vec![&x0, &x1], vec![], vec![&dy])?;
         assert_eq!(*dx[0].data(), 4.0.into());
         assert_eq!(*dx[1].data(), (-4.0).into());
         Ok(())

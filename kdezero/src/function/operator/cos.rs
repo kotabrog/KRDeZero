@@ -21,7 +21,7 @@ impl FunctionContent for Cos {
         Ok(vec![y.into()])
     }
 
-    fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
+    fn backward(&self, xs: Vec<&Variable>, _ys: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         check_variable_count(&gys, 1)?;
         let x = xs[0];
@@ -76,7 +76,7 @@ mod tests {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
         let f = Cos::new();
-        let dx = f.backward(vec![&x], vec![&dy])?;
+        let dx = f.backward(vec![&x], vec![], vec![&dy])?;
         assert_eq!(*dx[0].data(), (-3.0 * std::f64::consts::FRAC_PI_4.sin()).into());
         Ok(())
     }
@@ -86,7 +86,7 @@ mod tests {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
         let f = Cos::new();
-        match f.backward(vec![&x], vec![&dy, &dy]) {
+        match f.backward(vec![&x], vec![], vec![&dy, &dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;
@@ -104,7 +104,7 @@ mod tests {
         let x = Variable::from(std::f64::consts::FRAC_PI_4);
         let dy = Variable::from(3.0);
         let f = Cos::new();
-        match f.backward(vec![&x, &x], vec![&dy]) {
+        match f.backward(vec![&x, &x], vec![], vec![&dy]) {
             Ok(_) => panic!("error"),
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>()?;

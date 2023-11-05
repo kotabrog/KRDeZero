@@ -20,7 +20,7 @@ impl FunctionContent for Neg {
         Ok(vec![y.into()])
     }
 
-    fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
+    fn backward(&self, xs: Vec<&Variable>, _ys: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         check_variable_count(&gys, 1)?;
         let gy = gys[0];
@@ -72,7 +72,7 @@ mod tests {
         let x = Variable::from(2.0);
         let dy = Variable::from(4.0);
         let f = Neg::new();
-        let dx = f.backward(vec![&x], vec![&dy])?;
+        let dx = f.backward(vec![&x], vec![], vec![&dy])?;
         assert_eq!(*dx[0].data(), (-4.0).into());
         Ok(())
     }

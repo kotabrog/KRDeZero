@@ -752,3 +752,30 @@ fn step34() -> Result<()> {
     root.present()?;
     Ok(())
 }
+
+#[test]
+fn step35() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::tanh;
+    use kdezero::plot_dot_graph;
+
+    let mut x = Variable::from(1.0);
+    let mut y = tanh(&x)?;
+    x.set_name("x");
+    y.set_name("y");
+    y.backward_create_graph()?;
+
+    let iters = 2;
+
+    for _ in 0..iters {
+        let mut gx = x.grad_result()?;
+        x.clear_grad();
+        gx.backward_create_graph()?;
+    }
+
+    let mut gx = x.grad_result()?;
+    gx.set_name("gx");
+    plot_dot_graph(&gx, "output/step35", true, false)?;
+
+    Ok(())
+}
