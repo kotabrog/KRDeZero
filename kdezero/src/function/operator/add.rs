@@ -24,10 +24,8 @@ impl FunctionContent for Add {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 2)?;
         check_variable_count(&gys, 1)?;
-        let gy = gys[0].data();
-        let gx0 = gy.clone();
-        let gx1 = gy.clone();
-        Ok(vec![gx0.into(), gx1.into()])
+        let gy = gys[0].clone();
+        Ok(vec![gy.clone(), gy])
     }
 
     fn name(&self) -> String {

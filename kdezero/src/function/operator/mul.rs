@@ -24,12 +24,12 @@ impl FunctionContent for Mul {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 2)?;
         check_variable_count(&gys, 1)?;
-        let x0 = xs[0].data();
-        let x1 = xs[1].data();
-        let gy = gys[0].data();
-        let gx0 = gy.mul(&x1)?;
-        let gx1 = gy.mul(&x0)?;
-        Ok(vec![gx0.into(), gx1.into()])
+        let x0 = xs[0];
+        let x1 = xs[1];
+        let gy = gys[0];
+        let gx0 = mul(gy, x1)?;
+        let gx1 = mul(gy, x0)?;
+        Ok(vec![gx0, gx1])
     }
 
     fn name(&self) -> String {

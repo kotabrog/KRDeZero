@@ -27,6 +27,14 @@ pub fn no_grad() -> NoGradGuard {
     NoGradGuard::new()
 }
 
+pub fn no_grad_frag(flag: bool) -> Option<NoGradGuard> {
+    if flag {
+        Some(NoGradGuard::new())
+    } else {
+        None
+    }
+}
+
 pub fn is_no_grad_enabled() -> bool {
     NO_GRAD.with(|no_grad| *no_grad.borrow())
 }

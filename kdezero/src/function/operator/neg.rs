@@ -23,9 +23,9 @@ impl FunctionContent for Neg {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         check_variable_count(&gys, 1)?;
-        let gy = gys[0].data();
-        let gx = gy.neg()?;
-        Ok(vec![gx.into()])
+        let gy = gys[0];
+        let gx = neg(gy)?;
+        Ok(vec![gx])
     }
 
     fn name(&self) -> String {

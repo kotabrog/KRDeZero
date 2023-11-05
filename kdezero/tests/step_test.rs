@@ -126,7 +126,7 @@ fn step6() -> Result<()> {
     let dx = b.backward(&dx)?;
     let dx2 = a.backward(&dx)?;
 
-    println!("{:?}", dx2);
+    println!("{}", dx2[0]);
     assert_approx_eq_tensor(
         dx1.data().to_f64_tensor()?,
         dx2[0].data().to_f64_tensor()?, 1e-4);
@@ -167,7 +167,7 @@ fn step8() -> Result<()> {
 
     y[0].backward()?;
 
-    println!("{:?}", x.grad_result()?);
+    println!("{}", x.grad_result()?);
     assert_approx_eq_tensor(
         dx.data().to_f64_tensor()?,
         x.grad_result()?.data().to_f64_tensor()?, 1e-4);
@@ -202,7 +202,7 @@ fn step9() -> Result<()> {
 
     y.backward()?;
 
-    println!("{:?}", x.grad_result()?);
+    println!("{}", x.grad_result()?);
 
     assert_approx_eq_tensor(
         dx.data().to_f64_tensor()?,
@@ -224,21 +224,23 @@ fn step11() {
 }
 
 #[test]
-fn step13() {
+fn step13() -> Result<()> {
     use kdezero::Variable;
     use kdezero::function::{add, square};
 
     let x = Variable::from(2.0);
     let y = Variable::from(3.0);
-    let mut z = add(&square(&x).unwrap(), &square(&y).unwrap())
-        .unwrap();
-    z.backward().unwrap();
+    let mut z = add(&square(&x)?, &square(&y)?)
+        ?;
+    z.backward()?;
     println!("{:?}", z.data());
-    println!("{:?}", x.grad_result().unwrap());
-    println!("{:?}", y.grad_result().unwrap());
+    println!("{}", x.grad_result()?);
+    println!("{}", y.grad_result()?);
     assert_eq!(*z.data(), 13.0.into());
-    assert_eq!(*x.grad_result().unwrap().data(), 4.0.into());
-    assert_eq!(*y.grad_result().unwrap().data(), 6.0.into());
+    assert_eq!(*x.grad_result()?.data(), 4.0.into());
+    assert_eq!(*y.grad_result()?.data(), 6.0.into());
+
+    Ok(())
 }
 
 #[test]
@@ -609,6 +611,53 @@ fn step28() -> Result<()> {
         if i % 100 == 0 {
             println!("{} {:.10} {:.10}", i, x0.data(), x1.data());
         }
+    }
+
+    Ok(())
+}
+
+#[test]
+fn step33() -> Result<()> {
+    use kdezero::Variable;
+    use kdezero::function::pow;
+
+    fn f(x: &Variable) -> Result<Variable> {
+        let y = pow(x, 4.0)? - pow(x, 2.0)? * 2.0.into();
+        Ok(y)
+    }
+
+    let mut x = Variable::from(2.0);
+    let mut y = f(&x)?;
+    y.backward_create_graph()?;
+
+    println!("{}", x.grad_result()?);
+    assert_eq!(*x.grad_result()?.data(), 24.0.into());
+
+    let mut gx = x.grad_result()?;
+    x.clear_grad();
+    gx.backward()?;
+
+    println!("{}", x.grad_result()?);
+    assert_eq!(*x.grad_result()?.data(), 44.0.into());
+
+    let mut x = Variable::from(2.0);
+    let iters = 10;
+
+    for i in 0..iters {
+        let mut y = f(&x)?;
+        x.clear_grad();
+        y.backward_create_graph()?;
+
+        let mut gx = x.grad_result()?;
+        x.clear_grad();
+        gx.backward()?;
+        let gx2 = x.grad_result()?;
+
+        let new_x = x.data()
+            .sub(&gx.data().div(&gx2.data())?)?;
+        x.set_data(new_x);
+
+        println!("{} {:.10}", i, x.data());
     }
 
     Ok(())

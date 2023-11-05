@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crate::Variable;
+use super::mul;
 use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
@@ -23,10 +24,11 @@ impl FunctionContent for Square {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         check_variable_count(&gys, 1)?;
-        let x = xs[0].data();
-        let gy = gys[0].data();
-        let gx = gy.mul(&x.scalar_mul(2.0)?)?;
-        Ok(vec![gx.into()])
+        let x = xs[0];
+        let gy = gys[0];
+        let gx = mul(gy,
+            &mul(x, &x.data().full_like(2.0)?.into())?)?;
+        Ok(vec![gx])
     }
 
     fn name(&self) -> String {

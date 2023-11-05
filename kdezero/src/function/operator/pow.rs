@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crate::Variable;
+use super::mul;
 use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
@@ -25,11 +26,12 @@ impl FunctionContent for Pow {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 1)?;
         check_variable_count(&gys, 1)?;
-        let x = xs[0].data();
-        let gy = gys[0].data();
-        let gx = x.pow(self.c - 1.0)?
-            .mul(&gy)?.scalar_mul(self.c)?;
-        Ok(vec![gx.into()])
+        let x = xs[0];
+        let gy = gys[0];
+        let gx = mul(
+            &mul(&pow(x, self.c - 1.0)?, gy)?,
+            &x.data().full_like(self.c)?.into())?;
+        Ok(vec![gx])
     }
 
     fn name(&self) -> String {

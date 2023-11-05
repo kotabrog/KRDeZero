@@ -1,5 +1,6 @@
 use anyhow::Result;
 use crate::Variable;
+use super::neg;
 use super::super::{FunctionContent, Function};
 use super::super::function_helper::check_variable_count;
 
@@ -24,10 +25,10 @@ impl FunctionContent for Sub {
     fn backward(&self, xs: Vec<&Variable>, gys: Vec<&Variable>) -> Result<Vec<Variable>> {
         check_variable_count(&xs, 2)?;
         check_variable_count(&gys, 1)?;
-        let gy = gys[0].data();
+        let gy = gys[0];
         let gx0 = gy.clone();
-        let gx1 = gy.neg()?;
-        Ok(vec![gx0.into(), gx1.into()])
+        let gx1 = neg(gy)?;
+        Ok(vec![gx0, gx1])
     }
 
     fn name(&self) -> String {

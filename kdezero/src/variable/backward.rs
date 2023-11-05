@@ -1,6 +1,6 @@
 use std::collections::{BinaryHeap, HashSet};
 use anyhow::Result;
-use crate::Function;
+use crate::{Function, no_grad_frag};
 use crate::function::add;
 use super::Variable;
 
@@ -39,7 +39,7 @@ fn add_func(func: &Function, funcs: &mut BinaryHeap<OrdFunction>, seen_set: &mut
 }
 
 impl Variable {
-    fn backward_inner(&mut self, retain_grad: bool) -> Result<()> {
+    fn backward_inner(&mut self, retain_grad: bool, create_graph: bool) -> Result<()> {
         self.set_default_grad_if_none()?;
 
         let mut funcs = BinaryHeap::new();
@@ -56,6 +56,7 @@ impl Variable {
                 .iter()
                 .map(|y| y.grad_result())
                 .collect::<Result<Vec<_>>>()?;
+            let _guard = no_grad_frag(!create_graph);
             let xgs = f.backward(&grad)?;
             for (mut x, xg) in xs.into_iter().zip(xgs) {
                 if x.is_grad_none() {
@@ -77,10 +78,18 @@ impl Variable {
     }
 
     pub fn backward(&mut self) -> Result<()> {
-        self.backward_inner(false)
+        self.backward_inner(false, false)
     }
 
     pub fn backward_retain_grad(&mut self) -> Result<()> {
-        self.backward_inner(true)
+        self.backward_inner(true, false)
+    }
+
+    pub fn backward_create_graph(&mut self) -> Result<()> {
+        self.backward_inner(false, true)
+    }
+
+    pub fn backward_option(&mut self, retain_grad: bool, create_graph: bool) -> Result<()> {
+        self.backward_inner(retain_grad, create_graph)
     }
 }
