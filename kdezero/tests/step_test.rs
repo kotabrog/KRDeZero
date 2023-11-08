@@ -822,3 +822,41 @@ fn step38() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step40() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::{sum_keepdims, sum_axis};
+
+    let x = Variable::new(
+        Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            vec![2, 3])?.into());
+    let mut y = sum_axis(&x, vec![0], false)?;
+    y.backward()?;
+    println!("{}", y);
+    assert_eq!(
+        *y.data(),
+        Tensor::new(vec![5.0, 7.0, 9.0], vec![3])?.into());
+    println!("{}", x.grad_result()?);
+    assert_eq!(
+        *x.grad_result()?.data(),
+        Tensor::<f64>::ones(vec![2, 3]).into());
+
+
+    let x = Variable::new(
+        Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            vec![2, 3])?.into());
+    let mut y = sum_keepdims(&x)?;
+    y.backward()?;
+    println!("{}", y);
+    assert_eq!(
+        *y.data(),
+        Tensor::new(vec![21.0], vec![1, 1])?.into());
+    println!("{}", x.grad_result()?);
+    assert_eq!(
+        *x.grad_result()?.data(),
+        Tensor::<f64>::ones(vec![2, 3]).into());
+
+    Ok(())
+}

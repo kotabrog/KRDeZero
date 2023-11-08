@@ -11,6 +11,9 @@ mod cos;
 mod tanh;
 mod reshape;
 mod transpose;
+mod broadcast_to;
+mod sum_to;
+mod sum;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -25,3 +28,6 @@ pub use cos::{Cos, cos};
 pub use tanh::{Tanh, tanh};
 pub use reshape::{Reshape, reshape};
 pub use transpose::{Transpose, transpose};
+pub use broadcast_to::{BroadcastTo, broadcast_to};
+pub use sum_to::{SumTo, sum_to};
+pub use sum::{Sum, sum, sum_keepdims, sum_axis};

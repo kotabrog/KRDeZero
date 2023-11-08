@@ -172,6 +172,34 @@ impl VariableData {
         })
     }
 
+    pub fn sum(&self, axis: Option<&Vec<usize>>, keepdims: bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.sum(axis, keepdims).into(),
+            VariableData::F64(x) => x.sum(axis, keepdims).into(),
+            VariableData::I32(x) => x.sum(axis, keepdims).into(),
+            VariableData::I64(x) => x.sum(axis, keepdims).into(),
+            VariableData::USIZE(x) => x.sum(axis, keepdims).into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "sum".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn sum_to(&self, shape: &[usize]) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.sum_to(shape)?.into(),
+            VariableData::F64(x) => x.sum_to(shape)?.into(),
+            VariableData::I32(x) => x.sum_to(shape)?.into(),
+            VariableData::I64(x) => x.sum_to(shape)?.into(),
+            VariableData::USIZE(x) => x.sum_to(shape)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "sum_to".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
     pub fn reshape(&self, shape: &[usize]) -> Result<VariableData> {
         Ok(match self {
             VariableData::F32(x) => x.reshape(shape)?.into(),
@@ -197,6 +225,21 @@ impl VariableData {
             VariableData::Bool(x) => x.transpose().into(),
             _ => return Err(KDeZeroError::NotImplementedType(
                 "transpose".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn broadcast_to(&self, shape: &[usize]) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.broadcast_to(shape)?.into(),
+            VariableData::F64(x) => x.broadcast_to(shape)?.into(),
+            VariableData::I32(x) => x.broadcast_to(shape)?.into(),
+            VariableData::I64(x) => x.broadcast_to(shape)?.into(),
+            VariableData::USIZE(x) => x.broadcast_to(shape)?.into(),
+            VariableData::Bool(x) => x.broadcast_to(shape)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "broadcast_to".to_string(),
                 self.data_type().to_string(),
             ).into()),
         })
@@ -549,6 +592,51 @@ mod tests {
     }
 
     #[test]
+    fn sum_to_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = x.sum_to(&[3])?;
+        assert_eq!(y, Tensor::<f64>::arrange([2, 3])?.sum_to([3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn error_sum_to_mismatch() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
+        match x.sum_to(&[2, 2]) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>()?;
+                assert_eq!(
+                    e,
+                    TensorError::ShapeError(
+                        vec![1, 6], vec![2, 2]
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn error_sum_to_bool() -> Result<()> {
+        let x = VariableData::from(Tensor::full(true, [2, 3]));
+        match x.sum_to(&[3]) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "sum_to".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn reshape_f32() -> Result<()> {
         let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
         let y = x.reshape(&[2, 3])?;
@@ -579,6 +667,32 @@ mod tests {
         let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
         let y = x.transpose()?;
         assert_eq!(y, Tensor::<f64>::arrange([6, 1])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn broadcast_to_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([3,])?);
+        let y = x.broadcast_to(&[2, 3])?;
+        assert_eq!(y, Tensor::<f64>::arrange([3,])?.broadcast_to([2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn error_broadcast_to_mismatch() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
+        match x.broadcast_to(&[2, 2]) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>()?;
+                assert_eq!(
+                    e,
+                    TensorError::ShapeError(
+                        vec![1, 6], vec![2, 2]
+                    )
+                );
+            }
+        }
         Ok(())
     }
 }
