@@ -797,3 +797,28 @@ fn step36() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step38() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::{reshape, transpose};
+
+    let x = Variable::new(Tensor::<f64>::arrange([2, 3])?.into());
+    let mut y = reshape(&x, &[6])?;
+    y.backward()?;
+    println!("{}", x.grad_result()?);
+    assert_eq!(
+        *x.grad_result()?.data(),
+        Tensor::<f64>::ones(vec![2, 3]).into());
+
+    let x = Variable::new(Tensor::<f64>::arrange([2, 3])?.into());
+    let mut y = transpose(&x)?;
+    y.backward()?;
+    println!("{}", x.grad_result()?);
+    assert_eq!(
+        *x.grad_result()?.data(),
+        Tensor::<f64>::ones(vec![2, 3]).into());
+
+    Ok(())
+}

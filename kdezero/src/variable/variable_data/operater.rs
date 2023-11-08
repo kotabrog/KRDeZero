@@ -171,11 +171,43 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn reshape(&self, shape: &[usize]) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.reshape(shape)?.into(),
+            VariableData::F64(x) => x.reshape(shape)?.into(),
+            VariableData::I32(x) => x.reshape(shape)?.into(),
+            VariableData::I64(x) => x.reshape(shape)?.into(),
+            VariableData::USIZE(x) => x.reshape(shape)?.into(),
+            VariableData::Bool(x) => x.reshape(shape)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "reshape".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn transpose(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.transpose().into(),
+            VariableData::F64(x) => x.transpose().into(),
+            VariableData::I32(x) => x.transpose().into(),
+            VariableData::I64(x) => x.transpose().into(),
+            VariableData::USIZE(x) => x.transpose().into(),
+            VariableData::Bool(x) => x.transpose().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "transpose".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ktensor::Tensor;
+    use ktensor::error::TensorError;
 
     #[test]
     fn add_f32() -> Result<()> {
@@ -513,6 +545,40 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn reshape_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
+        let y = x.reshape(&[2, 3])?;
+        assert_eq!(y, Tensor::<f64>::arrange([2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn reshape_no_match() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
+        match x.reshape(&[2, 2]) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>()?;
+                assert_eq!(
+                    e,
+                    TensorError::ShapeSizeError(
+                        6, 4
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn transpose_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([1, 6])?);
+        let y = x.transpose()?;
+        assert_eq!(y, Tensor::<f64>::arrange([6, 1])?.into());
         Ok(())
     }
 }

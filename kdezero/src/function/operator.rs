@@ -9,6 +9,8 @@ mod pow;
 mod sin;
 mod cos;
 mod tanh;
+mod reshape;
+mod transpose;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -21,3 +23,5 @@ pub use pow::{Pow, pow};
 pub use sin::{Sin, sin};
 pub use cos::{Cos, cos};
 pub use tanh::{Tanh, tanh};
+pub use reshape::{Reshape, reshape};
+pub use transpose::{Transpose, transpose};

@@ -10,8 +10,8 @@ use crate::error::KDeZeroError;
 use crate::is_no_grad_enabled;
 
 pub use operator::{
-    Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos, Tanh,
-    exp, square, add, mul, neg, sub, div, pow, sin, cos, tanh,
+    Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos, Tanh, Reshape, Transpose,
+    exp, square, add, mul, neg, sub, div, pow, sin, cos, tanh, reshape, transpose,
 };
 
 pub trait FunctionContent: std::fmt::Debug {
