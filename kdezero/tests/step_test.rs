@@ -860,3 +860,21 @@ fn step40() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step41() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::matmul;
+
+    let x = Variable::new(Tensor::<f64>::arrange([2, 3])?.into());
+    let w = Variable::new(Tensor::<f64>::arrange([3, 4])?.into());
+    let mut y = matmul(&x, &w)?;
+    y.backward()?;
+
+    println!("{:?}", x.grad_result()?.shape());
+    assert_eq!(*x.grad_result()?.shape(), [2, 3]);
+    println!("{:?}", w.grad_result()?.shape());
+    assert_eq!(*w.grad_result()?.shape(), [3, 4]);
+    Ok(())
+}

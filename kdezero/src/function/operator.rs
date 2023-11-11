@@ -14,6 +14,7 @@ mod transpose;
 mod broadcast_to;
 mod sum_to;
 mod sum;
+mod matmul;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -31,3 +32,4 @@ pub use transpose::{Transpose, transpose};
 pub use broadcast_to::{BroadcastTo, broadcast_to};
 pub use sum_to::{SumTo, sum_to};
 pub use sum::{Sum, sum, sum_keepdims, sum_axis};
+pub use matmul::{MatMul, matmul};

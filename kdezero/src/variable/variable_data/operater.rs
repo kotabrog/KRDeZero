@@ -200,6 +200,20 @@ impl VariableData {
         })
     }
 
+    pub fn matmul(&self, other: &VariableData) -> Result<VariableData> {
+        Ok(match (self, other) {
+            (VariableData::F32(x), VariableData::F32(y)) => x.matmul(y)?.into(),
+            (VariableData::F64(x), VariableData::F64(y)) => x.matmul(y)?.into(),
+            (VariableData::I32(x), VariableData::I32(y)) => x.matmul(y)?.into(),
+            (VariableData::I64(x), VariableData::I64(y)) => x.matmul(y)?.into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) => x.matmul(y)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "matmul".to_string(),
+                format!("{:?}, {:?}", self.data_type(), other.data_type()),
+            ).into()),
+        })
+    }
+
     pub fn reshape(&self, shape: &[usize]) -> Result<VariableData> {
         Ok(match self {
             VariableData::F32(x) => x.reshape(shape)?.into(),
@@ -629,6 +643,35 @@ mod tests {
                     KDeZeroError::NotImplementedType(
                         "sum_to".to_string(),
                         x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn matmul_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = VariableData::from(Tensor::<f64>::arrange([3, 1])?);
+        let z = x.matmul(&y)?;
+        assert_eq!(z, Tensor::new(vec![5.0, 14.0], vec![2, 1])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn error_mutmul_bool() -> Result<()> {
+        let x = VariableData::from(Tensor::full(true, [2, 3]));
+        let y = VariableData::from(Tensor::full(true, [3, 1]));
+        match x.matmul(&y) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "matmul".to_string(),
+                        format!("{:?}, {:?}", x.data_type(), y.data_type()),
                     )
                 );
             }
