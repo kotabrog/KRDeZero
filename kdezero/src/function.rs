@@ -11,11 +11,11 @@ use crate::is_no_grad_enabled;
 
 pub use operator::{
     Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos,
-    Tanh, Reshape, Transpose, BroadcastTo, SumTo, Sum,
-    MatMul,
+    Tanh, Reshape, Transpose, BroadcastTo, SumTo,
+    Sum, MatMul, MeanSquaredError,
     exp, square, add, mul, neg, sub, div, pow, sin, cos,
-    tanh, reshape, transpose, broadcast_to, sum_to, sum, sum_keepdims, sum_axis,
-    matmul,
+    tanh, reshape, transpose, broadcast_to, sum_to,
+    sum, sum_keepdims, sum_axis, sum_all, matmul, mean_squared_error,
 };
 
 pub trait FunctionContent: std::fmt::Debug {

@@ -12,6 +12,15 @@ impl<T> Tensor<T>
         self.data.len()
     }
 
+    /// Get the length of the tensor
+    pub fn len(&self) -> usize {
+        if self.ndim() == 0 {
+            1
+        } else {
+            self.shape[0]
+        }
+    }
+
     /// Get the type of the tensor data
     pub fn data_type(&self) -> &str {
         std::any::type_name::<T>()
@@ -60,6 +69,20 @@ mod tests {
     fn size_zero_dim() {
         let x = Tensor::new([0.0], []).unwrap();
         assert_eq!(x.size(), 1);
+    }
+
+    #[test]
+    fn len_normal() {
+        let x = Tensor::new([0.0, 1.0, 2.0], [3,]).unwrap();
+        assert_eq!(x.len(), 3);
+        let x = Tensor::new([0.0, 1.0, 2.0, 3.0], [2, 2]).unwrap();
+        assert_eq!(x.len(), 2);
+    }
+
+    #[test]
+    fn len_zero_dim() {
+        let x = Tensor::new([0.0], []).unwrap();
+        assert_eq!(x.len(), 1);
     }
 
     #[test]

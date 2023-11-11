@@ -1,4 +1,5 @@
 use anyhow::Result;
+use plotters::prelude::*;
 
 #[test]
 fn step1() {
@@ -876,5 +877,115 @@ fn step41() -> Result<()> {
     assert_eq!(*x.grad_result()?.shape(), [2, 3]);
     println!("{:?}", w.grad_result()?.shape());
     assert_eq!(*w.grad_result()?.shape(), [3, 4]);
+    Ok(())
+}
+
+fn plot_data_and_line(data: &[(f64, f64)], file_name: &str, w: f64, b: f64) -> Result<()> {
+    let root = BitMapBackend::new(file_name, (640, 480)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
+    let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
+    let y_max = data.iter().map(|&(_, y)| y).fold(f64::NEG_INFINITY, f64::max);
+    let y_min = data.iter().map(|&(_, y)| y).fold(f64::INFINITY, f64::min);
+
+    let x_margin = (x_max - x_min) * 0.05;
+    let y_margin = (y_max - y_min) * 0.05;
+
+    let mut chart = ChartBuilder::on(&root)
+        .margin(10)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d(
+            (x_min - x_margin)..(x_max + x_margin),
+            (y_min - y_margin)..(y_max + y_margin)
+    )?;
+
+    chart.configure_mesh().draw()?;
+
+    let shape_style = ShapeStyle::from(&BLUE).filled();
+    chart.draw_series(data.iter().map(|&(x, y)| Circle::new((x, y), 5, shape_style)))?;
+
+    let line_points: Vec<(f64, f64)> = (0..=100)
+        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
+        .map(|x| (x, w * x + b))
+        .collect();
+    chart.draw_series(LineSeries::new(line_points, &RED))?;
+
+    root.present()?;
+
+    Ok(())
+}
+
+#[test]
+fn step42() -> Result<()> {
+    use std::fs::create_dir;
+    use ktensor::{Tensor, tensor::TensorRng};
+    use kdezero::Variable;
+    use kdezero::function::{matmul, broadcast_to, mean_squared_error};
+
+    fn predict(x: &Variable, w: &Variable, b: &Variable) -> Result<Variable> {
+        let y = matmul(&x, &w)? + broadcast_to(&b, &[x.shape()[0], 1])?;
+        Ok(y)
+    }
+
+    // fn mean_squared_error(
+    //     y_pred: &Variable, y_true: &Variable) -> Result<Variable> {
+    //     let n = y_pred.shape()[0] as f64;
+    //     let diff = y_pred - y_true;
+    //     let loss = sum_all(&pow(&diff, 2.0)?)? / n.into();
+    //     Ok(loss)
+    // }
+
+    let mut rng = TensorRng::new();
+    let x_data = rng.gen::<f64, _>(vec![100, 1]);
+    let y_data = &x_data * 2.0 + 5.0 + rng.gen::<f64, _>(vec![100, 1]);
+
+    let x = Variable::new(x_data.clone().into());
+    let y = Variable::new(y_data.clone().into());
+
+    let mut w = Variable::new(Tensor::<f64>::zeros(vec![1, 1]).into());
+    let mut b = Variable::new(Tensor::<f64>::zeros(vec![1, 1]).into());
+
+    let lr = 0.1;
+    let iters = 100;
+
+    for i in 0..iters {
+        let y_pred = predict(&x, &w, &b)?;
+        let mut loss = mean_squared_error(&y_pred, &y)?;
+        w.clear_grad();
+        b.clear_grad();
+        loss.backward()?;
+
+        let new_w = w.data()
+            .sub(&w.grad_result()?.data().scalar_mul(lr)?)?;
+        w.set_data(new_w);
+
+        let new_b = b.data()
+            .sub(&b.grad_result()?.data().scalar_mul(lr)?)?;
+        b.set_data(new_b);
+
+        if i % 10 == 0 || i == iters - 1 {
+            println!("{} {:.10}", i, loss);
+        }
+    }
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    let data: Vec<(f64, f64)> = x_data.iter()
+        .zip(y_data.iter())
+        .map(|(&x, &y)| (x, y))
+        .collect();
+
+    plot_data_and_line(
+        &data,
+        "output/step42.png",
+        w.data().to_f64_tensor()?.to_scalar()?,
+        b.data().to_f64_tensor()?.to_scalar()?,
+    )?;
+
     Ok(())
 }

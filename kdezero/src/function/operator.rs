@@ -15,6 +15,7 @@ mod broadcast_to;
 mod sum_to;
 mod sum;
 mod matmul;
+mod mean_squared_error;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -31,5 +32,6 @@ pub use reshape::{Reshape, reshape};
 pub use transpose::{Transpose, transpose};
 pub use broadcast_to::{BroadcastTo, broadcast_to};
 pub use sum_to::{SumTo, sum_to};
-pub use sum::{Sum, sum, sum_keepdims, sum_axis};
+pub use sum::{Sum, sum, sum_keepdims, sum_axis, sum_all};
 pub use matmul::{MatMul, matmul};
+pub use mean_squared_error::{MeanSquaredError, mean_squared_error};

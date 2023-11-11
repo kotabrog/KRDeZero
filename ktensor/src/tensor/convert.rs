@@ -17,7 +17,7 @@ where
     /// 
     /// If the tensor is not scalar, `TensorError::NotScalarError` is returned
     pub fn to_scalar(&self) -> Result<T> {
-        if self.is_scalar() {
+        if self.size() == 1 {
             Ok(self.data[0].clone())
         } else {
             Err(
@@ -76,6 +76,12 @@ mod tests {
     #[test]
     fn to_scalar_normal() {
         let tensor = Tensor::new(vec![1], vec![]).unwrap();
+        assert_eq!(tensor.to_scalar().unwrap(), 1);
+    }
+
+    #[test]
+    fn to_scalar_non_scalar() {
+        let tensor = Tensor::new(vec![1], vec![1, 1]).unwrap();
         assert_eq!(tensor.to_scalar().unwrap(), 1);
     }
 

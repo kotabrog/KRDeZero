@@ -76,6 +76,13 @@ pub fn sum_axis(x: &Variable, axis: Vec<usize>, keepdims: bool) -> Result<Variab
     Ok(y)
 }
 
+pub fn sum_all(x: &Variable) -> Result<Variable> {
+    let mut func = Function::new(Sum::new(None, false));
+    let mut ys = func.forward(&[x.clone()])?;
+    let y = ys.remove(0);
+    Ok(y)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

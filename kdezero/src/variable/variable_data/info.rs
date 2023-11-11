@@ -37,6 +37,18 @@ impl VariableData {
         }
     }
 
+    pub fn len(&self) -> usize {
+        match self {
+            Self::None => 0,
+            Self::F32(x) => x.len(),
+            Self::F64(x) => x.len(),
+            Self::I32(x) => x.len(),
+            Self::I64(x) => x.len(),
+            Self::USIZE(x) => x.len(),
+            Self::Bool(x) => x.len(),
+        }
+    }
+
     pub fn data_type(&self) -> &str {
         match self {
             Self::None => "None",

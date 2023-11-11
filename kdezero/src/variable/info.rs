@@ -18,6 +18,11 @@ impl Variable {
         inner.data.size()
     }
 
+    pub fn len(&self) -> usize {
+        let inner = self.inner.borrow();
+        inner.data.len()
+    }
+
     pub fn data_type(&self) -> Ref<str> {
         let inner = self.inner.borrow();
         Ref::map(inner, |inner| inner.data.data_type())
