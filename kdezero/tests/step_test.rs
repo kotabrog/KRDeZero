@@ -880,7 +880,7 @@ fn step41() -> Result<()> {
     Ok(())
 }
 
-fn plot_data_and_line(data: &[(f64, f64)], file_name: &str, w: f64, b: f64) -> Result<()> {
+fn plot_data_and_line(data: &[(f64, f64)], file_name: &str, line_points: Vec<(f64, f64)>) -> Result<()> {
     let root = BitMapBackend::new(file_name, (640, 480)).into_drawing_area();
     root.fill(&WHITE)?;
 
@@ -906,10 +906,6 @@ fn plot_data_and_line(data: &[(f64, f64)], file_name: &str, w: f64, b: f64) -> R
     let shape_style = ShapeStyle::from(&BLUE).filled();
     chart.draw_series(data.iter().map(|&(x, y)| Circle::new((x, y), 5, shape_style)))?;
 
-    let line_points: Vec<(f64, f64)> = (0..=100)
-        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
-        .map(|x| (x, w * x + b))
-        .collect();
     chart.draw_series(LineSeries::new(line_points, &RED))?;
 
     root.present()?;
@@ -980,11 +976,117 @@ fn step42() -> Result<()> {
         .map(|(&x, &y)| (x, y))
         .collect();
 
+    let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
+    let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
+
+    let w = w.data().to_f64_tensor()?.to_scalar()?;
+    let b = b.data().to_f64_tensor()?.to_scalar()?;
+
+    let line_points: Vec<(f64, f64)> = (0..=100)
+        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
+        .map(|x| (x, w * x + b))
+        .collect();
+
     plot_data_and_line(
         &data,
         "output/step42.png",
-        w.data().to_f64_tensor()?.to_scalar()?,
-        b.data().to_f64_tensor()?.to_scalar()?,
+        line_points
+    )?;
+
+    Ok(())
+}
+
+#[test]
+fn step43() -> Result<()> {
+    use std::fs::create_dir;
+    use ktensor::{Tensor, tensor::TensorRng};
+    use kdezero::Variable;
+    use kdezero::function::{linear, sigmoid, broadcast_to, mean_squared_error};
+
+    fn predict(x: &Variable, w0: &Variable, w1: &Variable, b0: &Variable, b1: &Variable) -> Result<Variable> {
+        let b0 = broadcast_to(b0, &[x.shape()[0], w0.shape()[1]])?;
+        let y = linear(x, w0, Some(&b0))?;
+        let y = sigmoid(&y)?;
+        let b1 = broadcast_to(b1, &[x.shape()[0], w1.shape()[1]])?;
+        let y = linear(&y, w1, Some(&b1))?;
+        Ok(y)
+    }
+
+    let mut rng = TensorRng::new();
+    let x_data = rng.gen::<f64, _>(vec![100, 1]);
+    let y_data = (&x_data * 2.0 * std::f64::consts::PI).sin() + rng.gen::<f64, _>(vec![100, 1]);
+
+    let x = Variable::new(x_data.clone().into());
+    let y = Variable::new(y_data.clone().into());
+
+    let mut w0 = Variable::new(rng.gen::<f64, _>(vec![1, 10]).into());
+    let mut b0 = Variable::new(Tensor::<f64>::zeros(vec![10]).into());
+    let mut w1 = Variable::new(rng.gen::<f64, _>(vec![10, 1]).into());
+    let mut b1 = Variable::new(Tensor::<f64>::zeros(vec![]).into());
+
+    let lr = 0.2;
+    let iters = 100;
+    // let iters = 10000;
+
+    for i in 0..iters {
+        let y_pred = predict(&x, &w0, &w1, &b0, &b1)?;
+        let mut loss = mean_squared_error(&y_pred, &y)?;
+        w0.clear_grad();
+        b0.clear_grad();
+        w1.clear_grad();
+        b1.clear_grad();
+        loss.backward()?;
+
+        let new_w = w0.data()
+            .sub(&w0.grad_result()?.data().scalar_mul(lr)?)?;
+        w0.set_data(new_w);
+
+        let new_w = w1.data()
+            .sub(&w1.grad_result()?.data().scalar_mul(lr)?)?;
+        w1.set_data(new_w);
+
+        let new_b = b0.data()
+            .sub(&b0.grad_result()?.data().scalar_mul(lr)?)?;
+        b0.set_data(new_b);
+
+        let new_b = b1.data()
+            .sub(&b1.grad_result()?.data().scalar_mul(lr)?)?;
+        b1.set_data(new_b);
+
+        if i % (iters / 10) == 0 || i == iters - 1 {
+            println!("{} {:.10}", i, loss);
+        }
+    }
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    let data: Vec<(f64, f64)> = x_data.iter()
+        .zip(y_data.iter())
+        .map(|(&x, &y)| (x, y))
+        .collect();
+
+    let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
+    let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
+
+    let line_x: Vec<f64> = (0..=100)
+        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
+        .collect();
+    let y = predict(
+        &Variable::new(Tensor::new(line_x.clone(), vec![line_x.len(), 1])?.into()),
+        &w0, &w1, &b0, &b1
+    )?;
+    let line_y = y.data().to_f64_tensor()?.get_data().clone();
+    let line_points = line_x.iter()
+        .zip(line_y.iter())
+        .map(|(&x, &y)| (x, y)).collect();
+
+    plot_data_and_line(
+        &data,
+        "output/step43.png",
+        line_points
     )?;
 
     Ok(())

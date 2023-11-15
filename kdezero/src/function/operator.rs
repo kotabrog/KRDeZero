@@ -16,6 +16,8 @@ mod sum_to;
 mod sum;
 mod matmul;
 mod mean_squared_error;
+mod linear;
+mod sigmoid;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -35,3 +37,5 @@ pub use sum_to::{SumTo, sum_to};
 pub use sum::{Sum, sum, sum_keepdims, sum_axis, sum_all};
 pub use matmul::{MatMul, matmul};
 pub use mean_squared_error::{MeanSquaredError, mean_squared_error};
+pub use linear::{Linear, linear};
+pub use sigmoid::{Sigmoid, sigmoid};

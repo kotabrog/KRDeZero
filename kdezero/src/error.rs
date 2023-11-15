@@ -6,6 +6,8 @@ pub enum KDeZeroError {
     Error(String),
     #[error("InvalidVariableCount: expected {0}, actual {1}")]
     InvalidVariableCount(usize, usize),
+    #[error("OutOfRangeVariableCount: expected {1} <= actual {0} < {2}")]
+    OutOfRangeVariableCount(usize, usize, usize),
     #[error("NotImplementedType: {0} is not implemented for {1}")]
     NotImplementedType(String, String),
     #[error("NotCollectType: {0} is not collect type. Expected: {1}")]
@@ -50,6 +52,22 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<KDeZeroError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "InvalidVariableCount: expected 1, actual 2");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_out_of_range_variable_count() -> Result<()> {
+        Err(KDeZeroError::OutOfRangeVariableCount(3, 1, 2).into())
+    }
+
+    #[test]
+    fn kdezero_error_out_of_range_variable_count() -> Result<()> {
+        match error_out_of_range_variable_count() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "OutOfRangeVariableCount: expected 1 <= actual 3 < 2");
                 Ok(())
             }
         }
