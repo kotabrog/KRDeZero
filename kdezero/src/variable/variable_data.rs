@@ -5,6 +5,31 @@ mod operater;
 
 use ktensor::Tensor;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum VariableType {
+    None,
+    F32,
+    F64,
+    I32,
+    I64,
+    USIZE,
+    Bool,
+}
+
+impl std::fmt::Display for VariableType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => write!(f, "None"),
+            Self::F32 => write!(f, "f32"),
+            Self::F64 => write!(f, "f64"),
+            Self::I32 => write!(f, "i32"),
+            Self::I64 => write!(f, "i64"),
+            Self::USIZE => write!(f, "usize"),
+            Self::Bool => write!(f, "bool"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum VariableData {
     None,

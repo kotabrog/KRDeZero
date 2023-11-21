@@ -2,7 +2,7 @@ use anyhow::Result;
 use crate::Variable;
 use super::{transpose, matmul};
 use super::super::{FunctionContent, Function};
-use super::super::function_helper::{check_variable_count, check_variable_count_between};
+use crate::utility::{check_variable_count, check_variable_count_between};
 
 #[derive(Debug)]
 pub struct Linear {}

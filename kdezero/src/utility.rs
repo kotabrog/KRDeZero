@@ -25,3 +25,14 @@ pub fn check_variable_count_between(xs: &Vec<&Variable>, n: usize, m: usize) -> 
         Ok(len)
     }
 }
+
+pub fn check_dimensions(x: &Variable, ndim: usize) -> Result<()> {
+    if x.ndim() != ndim {
+        Err(KDeZeroError::InvalidDimension(
+            ndim,
+            x.ndim(),
+        ).into())
+    } else {
+        Ok(())
+    }
+}

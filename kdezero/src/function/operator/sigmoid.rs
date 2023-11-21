@@ -2,7 +2,7 @@ use anyhow::Result;
 use crate::Variable;
 use super::{mul, sub};
 use super::super::{FunctionContent, Function};
-use super::super::function_helper::check_variable_count;
+use crate::utility::check_variable_count;
 
 #[derive(Debug)]
 pub struct Sigmoid {}

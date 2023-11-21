@@ -1091,3 +1091,104 @@ fn step43() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step44() -> Result<()> {
+    use std::fs::create_dir;
+    use ktensor::{Tensor, tensor::TensorRng};
+    use kdezero::{Variable, VariableType};
+    use kdezero::function::{sigmoid, mean_squared_error};
+    use kdezero::{Layer, layer::Linear};
+
+    fn predict(x: &Variable, l1: &Layer, l2: &Layer) -> Result<Variable> {
+        let y = l1.forward(&[x.clone()])?.remove(0);
+        let y = sigmoid(&y)?;
+        let y = l2.forward(&[y])?.remove(0);
+        Ok(y)
+    }
+
+    let mut l1 = Layer::new(Linear::new(
+        1, 10, true, VariableType::F64)?);
+    let mut l2 = Layer::new(Linear::new(
+        10, 1, true, VariableType::F64)?);
+
+    let mut rng = TensorRng::new();
+    let x_data = rng.gen::<f64, _>(vec![100, 1]);
+    let y_data = (&x_data * 2.0 * std::f64::consts::PI).sin() + rng.gen::<f64, _>(vec![100, 1]);
+
+    let x = Variable::new(x_data.clone().into());
+    let y = Variable::new(y_data.clone().into());
+
+    let lr = 0.2;
+    let iters = 100;
+    // let iters = 10000;
+
+    for i in 0..iters {
+        let y_pred = predict(&x, &l1, &l2)?;
+        let mut loss = mean_squared_error(&y_pred, &y)?;
+        l1.clear_grads();
+        l2.clear_grads();
+        loss.backward()?;
+
+        let l1_params = l1.get_params();
+        let mut w0 = l1_params["weight"].clone();
+        let mut b0 = l1_params["bias"].clone();
+        let l2_params = l2.get_params();
+        let mut w1 = l2_params["weight"].clone();
+        let mut b1 = l2_params["bias"].clone();
+
+        let new_w = w0.data()
+            .sub(&w0.grad_result()?.data().scalar_mul(lr)?)?;
+        w0.set_data(new_w);
+
+        let new_w = w1.data()
+            .sub(&w1.grad_result()?.data().scalar_mul(lr)?)?;
+        w1.set_data(new_w);
+
+        let new_b = b0.data()
+            .sub(&b0.grad_result()?.data().scalar_mul(lr)?)?;
+        b0.set_data(new_b);
+
+        let new_b = b1.data()
+            .sub(&b1.grad_result()?.data().scalar_mul(lr)?)?;
+        b1.set_data(new_b);
+
+        if i % (iters / 10) == 0 || i == iters - 1 {
+            println!("{} {:.10}", i, loss);
+        }
+    }
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    let data: Vec<(f64, f64)> = x_data.iter()
+        .zip(y_data.iter())
+        .map(|(&x, &y)| (x, y))
+        .collect();
+
+    let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
+    let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
+
+    let line_x: Vec<f64> = (0..=100)
+        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
+        .collect();
+
+    let y = predict(
+        &Variable::new(Tensor::new(line_x.clone(), vec![line_x.len(), 1])?.into()),
+        &l1, &l2
+    )?;
+    let line_y = y.data().to_f64_tensor()?.get_data().clone();
+    let line_points = line_x.iter()
+        .zip(line_y.iter())
+        .map(|(&x, &y)| (x, y)).collect();
+
+    plot_data_and_line(
+        &data,
+        "output/step44.png",
+        line_points
+    )?;
+
+    Ok(())
+}

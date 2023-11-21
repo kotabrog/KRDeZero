@@ -1,5 +1,7 @@
-use num_traits::{PrimInt, Float};
+use anyhow::Result;
+use num_traits::{PrimInt, Float, NumAssign};
 use super::Tensor;
+use crate::error::TensorError;
 
 impl<T> Tensor<T>
 where
@@ -86,6 +88,34 @@ where
     }
 }
 
+impl<T> Tensor<T>
+where
+    T: Float + NumAssign
+{
+    /// Calculate the mean of the tensor
+    pub fn mean(&self) -> Result<T> {
+        let len = T::from(self.size())
+            .ok_or(TensorError::CastError(
+                std::any::type_name::<T>().to_string()
+            ))?;
+        Ok(self.sum_all() / len)
+    }
+
+    /// Calculate the standard deviation of the tensor
+    pub fn std(&self) -> Result<T> {
+        let len = T::from(self.size())
+            .ok_or(TensorError::CastError(
+                std::any::type_name::<T>().to_string()
+            ))?;
+        let mean = self.mean()?;
+        let mut sum = T::zero();
+        for x in self.data.iter() {
+            sum += (*x - mean).powi(2);
+        }
+        Ok((sum / len).sqrt())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +184,17 @@ mod tests {
     fn sqrt_normal() {
         let x = Tensor::<f64>::new(vec![1.0, 4.0, 9.0, 16.0], vec![2, 2]).unwrap();
         assert_eq!(x.sqrt(), Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]).unwrap());
+    }
+
+    #[test]
+    fn mean_normal() {
+        let x = Tensor::<f64>::arrange([2, 2]).unwrap();
+        assert_eq!(x.mean().unwrap(), 1.5);
+    }
+
+    #[test]
+    fn std_normal() {
+        let x = Tensor::<f64>::arrange([2, 2]).unwrap();
+        assert!(x.std().unwrap() - 1.118033988749895 < 1e-10);
     }
 }

@@ -1,5 +1,4 @@
 mod operator;
-mod function_helper;
 
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -127,8 +126,7 @@ impl Function {
             .collect::<Vec<_>>();
         let mut ys = {
             let inner = &mut self.inner.borrow_mut();
-            let ys = inner.func.forward(refs)?;
-            ys
+            inner.func.forward(refs)?
         };
         if !is_no_grad_enabled() {
             let generation = xs

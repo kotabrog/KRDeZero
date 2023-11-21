@@ -1,9 +1,24 @@
 use anyhow::Result;
 use ktensor::Tensor;
+use ktensor::tensor::TensorRng;
 use crate::error::KDeZeroError;
-use super::VariableData;
+use super::{VariableData, VariableType};
 
 impl VariableData {
+    pub fn zeros_type(shape: &[usize], variable_type: VariableType) -> Result<Self> {
+        Ok(match variable_type {
+            VariableType::F32 => Self::F32(Tensor::zeros(shape)),
+            VariableType::F64 => Self::F64(Tensor::zeros(shape)),
+            VariableType::I32 => Self::I32(Tensor::zeros(shape)),
+            VariableType::I64 => Self::I64(Tensor::zeros(shape)),
+            VariableType::USIZE => Self::USIZE(Tensor::zeros(shape)),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                variable_type.to_string(),
+                "zeros_type".to_string(),
+            ).into()),
+        })
+    }
+
     pub fn ones_like(&self) -> Result<Self> {
         Ok(match self {
             Self::F32(x) => Self::F32(Tensor::ones_like(x)),
@@ -28,6 +43,18 @@ impl VariableData {
             _ => return Err(KDeZeroError::NotImplementedType(
                 self.data_type().to_string(),
                 "full_like".to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn random_normal(shape: &[usize], variable_type: VariableType) -> Result<Self> {
+        let mut rng = TensorRng::new();
+        Ok(match variable_type {
+            VariableType::F32 => Self::F32(rng.normal(shape, 0.0, 1.0)?),
+            VariableType::F64 => Self::F64(rng.normal(shape, 0.0, 1.0)?),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                variable_type.to_string(),
+                "normal".to_string(),
             ).into()),
         })
     }

@@ -13,7 +13,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::Function;
 
-pub use variable_data::VariableData;
+pub use variable_data::{VariableData, VariableType};
 pub use variable_weak::VariableWeak;
 
 #[derive(Debug, Clone)]
@@ -23,6 +23,7 @@ pub struct VariableInner {
     pub creator: Option<Function>,
     pub name: String,
     pub generation: usize,
+    pub is_param: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -38,6 +39,7 @@ impl VariableInner {
             creator: None,
             name: "".to_string(),
             generation: 0,
+            is_param: false,
         }
     }
 }
@@ -55,9 +57,31 @@ impl Variable {
         variable
     }
 
+    pub fn new_param(data: VariableData) -> Self {
+        let mut variable = Self::new(data);
+        variable.set_param(true);
+        variable
+    }
+
+    pub fn new_param_with_name(data: VariableData, name: &str) -> Self {
+        let mut variable = Self::new_param(data);
+        variable.set_name(name);
+        variable
+    }
+
     pub(crate) fn generation(&self) -> usize {
         let inner = self.inner.borrow();
         inner.generation
+    }
+
+    pub fn is_param(&self) -> bool {
+        let inner = self.inner.borrow();
+        inner.is_param
+    }
+
+    pub fn set_param(&mut self, is_param: bool) {
+        let mut inner = self.inner.borrow_mut();
+        inner.is_param = is_param;
     }
 }
 

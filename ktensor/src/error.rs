@@ -18,6 +18,8 @@ pub enum TensorError {
     NotVectorError(Vec<usize>),
     #[error("InvalidArgumentError: {0}")]
     InvalidArgumentError(String),
+    #[error("NewRandomNormalError: Failed to create a normal distribution.")]
+    NewRandomNormalError(),
 }
 
 #[cfg(test)]
@@ -148,6 +150,22 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<TensorError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "InvalidArgumentError: Error");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_new_random_normal() -> Result<()> {
+        Err(TensorError::NewRandomNormalError().into())
+    }
+
+    #[test]
+    fn tensor_error_new_random_normal() -> Result<()> {
+        match error_new_random_normal() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "NewRandomNormalError: Failed to create a normal distribution.");
                 Ok(())
             }
         }
