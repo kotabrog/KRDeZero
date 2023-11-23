@@ -8,14 +8,30 @@ use crate::{Variable, VariableWeak};
 
 pub use contents::Linear;
 
-pub trait LayerContent: std::fmt::Debug {
+pub trait LayerContent {
     fn forward(&self, xs: Vec<&Variable>) -> Result<Vec<Variable>>;
+
     fn get_params(&self) -> HashMap<String, Variable> {
         HashMap::new()
     }
+
+    fn get_layers(&self) -> HashMap<String, Layer> {
+        HashMap::new()
+    }
+
+    fn get_params_recursive(&self) -> HashMap<String, Variable> {
+        let mut params = self.get_params();
+        let layers = self.get_layers();
+        for (layer_name, layer) in layers {
+            let mut layer_params = layer.get_params_recursive();
+            for (name, param) in layer_params.drain() {
+                params.insert(format!("{}.{}", layer_name, name), param);
+            }
+        }
+        params
+    }
 }
 
-#[derive(Debug)]
 pub struct LayerInner {
     pub layer: Box<dyn LayerContent>,
     pub inputs: Option<Vec<VariableWeak>>,
@@ -23,6 +39,7 @@ pub struct LayerInner {
     pub name: String,
 }
 
+#[derive(Clone)]
 pub struct Layer {
     inner: Rc<RefCell<LayerInner>>,
 }
@@ -86,8 +103,21 @@ impl Layer {
         }
     }
 
+    pub fn clear_grads_recursive(&mut self) {
+        let inner = &mut self.inner.borrow();
+        let params = inner.layer.get_params_recursive();
+        for (_, mut param) in params {
+            param.clear_grad();
+        }
+    }
+
     pub fn get_params(&self) -> HashMap<String, Variable> {
         let inner = self.inner.borrow();
         inner.layer.get_params()
+    }
+
+    pub fn get_params_recursive(&self) -> HashMap<String, Variable> {
+        let inner = self.inner.borrow();
+        inner.layer.get_params_recursive()
     }
 }
