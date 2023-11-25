@@ -5,6 +5,20 @@ use crate::error::KDeZeroError;
 use super::{VariableData, VariableType};
 
 impl VariableData {
+    pub fn zeros_like(&self) -> Result<Self> {
+        Ok(match self {
+            Self::F32(x) => Self::F32(Tensor::zeros_like(x)),
+            Self::F64(x) => Self::F64(Tensor::zeros_like(x)),
+            Self::I32(x) => Self::I32(Tensor::zeros_like(x)),
+            Self::I64(x) => Self::I64(Tensor::zeros_like(x)),
+            Self::USIZE(x) => Self::USIZE(Tensor::zeros_like(x)),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                self.data_type().to_string(),
+                "zeros_like".to_string(),
+            ).into()),
+        })
+    }
+
     pub fn zeros_type(shape: &[usize], variable_type: VariableType) -> Result<Self> {
         Ok(match variable_type {
             VariableType::F32 => Self::F32(Tensor::zeros(shape)),

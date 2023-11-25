@@ -28,7 +28,7 @@ impl Variable {
         Ref::map(inner, |inner| inner.data.data_type())
     }
 
-    pub(crate) fn id(&self) -> usize {
+    pub fn id(&self) -> usize {
         Rc::as_ptr(&self.inner) as usize
     }
 }

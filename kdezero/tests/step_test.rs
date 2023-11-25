@@ -1382,3 +1382,81 @@ fn step45_2() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step46() -> Result<()> {
+    use std::fs::create_dir;
+    use ktensor::{Tensor, tensor::TensorRng};
+    use kdezero::{Variable, Model, Optimizer};
+    use kdezero::function::{mean_squared_error, sigmoid};
+    use kdezero::model::MLP;
+    // use kdezero::optimizer::SGD;
+    use kdezero::optimizer::MomentumSGD;
+
+    let layer = MLP::new(&[1, 10, 1], sigmoid)?;
+    let model = Model::new(layer);
+    // let opt_content = SGD::new(0.2);
+    let opt_content = MomentumSGD::new(0.01, 0.9);
+    let mut optimizer = Optimizer::new(opt_content);
+    optimizer.set_model(model);
+
+    let mut rng = TensorRng::new();
+    let x_data = rng.gen::<f64, _>(vec![100, 1]);
+    let y_data = (&x_data * 2.0 * std::f64::consts::PI).sin() + rng.gen::<f64, _>(vec![100, 1]);
+
+    let x = Variable::new(x_data.clone().into());
+    let y = Variable::new(y_data.clone().into());
+
+    let iters = 100;
+    // let iters = 10000;
+
+    for i in 0..iters {
+        let model = optimizer.get_model_mut_result()?;
+        let y_pred = model.forward(&[x.clone()])?.remove(0);
+        let mut loss = mean_squared_error(&y_pred, &y)?;
+        model.clear_grads();
+        loss.backward()?;
+        optimizer.update()?;
+
+        if i % (iters / 10) == 0 || i == iters - 1 {
+            println!("{} {:.10}", i, loss);
+        }
+    }
+
+    match create_dir("output") {
+        Ok(_) => println!("create output directory"),
+        Err(_) => {},
+    }
+
+    let data: Vec<(f64, f64)> = x_data.iter()
+        .zip(y_data.iter())
+        .map(|(&x, &y)| (x, y))
+        .collect();
+
+    let x_max = data.iter().map(|&(x, _)| x).fold(f64::NEG_INFINITY, f64::max);
+    let x_min = data.iter().map(|&(x, _)| x).fold(f64::INFINITY, f64::min);
+
+    let line_x: Vec<f64> = (0..=100)
+        .map(|x| x as f64 / 100.0 * (x_max - x_min) + x_min)
+        .collect();
+
+    let model = optimizer.get_model_mut_result()?;
+    let y = model.forward(
+        &[Variable::new(
+                Tensor::new(
+                        line_x.clone(),
+                        vec![line_x.len(), 1])?.into())]
+    )?.remove(0);
+    let line_y = y.data().to_f64_tensor()?.get_data().clone();
+    let line_points = line_x.iter()
+        .zip(line_y.iter())
+        .map(|(&x, &y)| (x, y)).collect();
+
+    plot_data_and_line(
+        &data,
+        "output/step46.png",
+        line_points
+    )?;
+
+    Ok(())
+}
