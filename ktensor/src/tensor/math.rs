@@ -62,6 +62,11 @@ where
         self.iter_func(|x| x.exp())
     }
 
+    /// Calculate the natural logarithm of the tensor
+    pub fn log(&self) -> Self {
+        self.iter_func(|x| x.ln())
+    }
+
     /// Calculate the sin of the tensor
     pub fn sin(&self) -> Self {
         self.iter_func(|x| x.sin())
@@ -143,6 +148,15 @@ mod tests {
         let x = Tensor::<f64>::arrange([2, 2]).unwrap();
         assert_eq!(x.exp(), Tensor::new(
             vec![0.0, 1.0, 2.0, 3.0].iter().map(|x| x.exp()).collect::<Vec<_>>(),
+            vec![2, 2]
+        ).unwrap());
+    }
+
+    #[test]
+    fn log_normal() {
+        let x = Tensor::<f64>::arrange([2, 2]).unwrap();
+        assert_eq!(x.log(), Tensor::new(
+            vec![0.0, 1.0, 2.0, 3.0].iter().map(|x| x.ln()).collect::<Vec<_>>(),
             vec![2, 2]
         ).unwrap());
     }

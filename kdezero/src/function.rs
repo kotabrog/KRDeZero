@@ -12,11 +12,14 @@ pub use operator::{
     Square, Exp, Add, Mul, Neg, Sub, Div, Pow, Sin, Cos,
     Tanh, Reshape, Transpose, BroadcastTo, SumTo,
     Sum, MatMul, MeanSquaredError,
-    Linear, Sigmoid,
+    Linear, Sigmoid, GetItem, GetItemGrad, SlicePattern,
+    Softmax, Log, SoftmaxCrossEntropy,
     exp, square, add, mul, neg, sub, div, pow, sin, cos,
     tanh, reshape, transpose, broadcast_to, sum_to,
     sum, sum_keepdims, sum_axis, sum_all, matmul, mean_squared_error,
     linear, sigmoid,
+    get_item, get_item_with_one_index, get_item_with_one_indexes, get_item_with_indexes,
+    softmax, log, softmax_cross_entropy,
 };
 
 pub trait FunctionContent: std::fmt::Debug {

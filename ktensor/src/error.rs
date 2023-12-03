@@ -8,6 +8,12 @@ pub enum TensorError {
     ShapeError(Vec<usize>, Vec<usize>),
     #[error("ShapeSizeError: data: {0}, shape: {1}")]
     ShapeSizeError(usize, usize),
+    #[error("DimensionError: dimension: {0}, expected: {1}")]
+    DimensionError(usize, usize),
+    #[error("DimensionSmallerError: dimension: {0}, expected: >={1}")]
+    DimensionSmallerError(usize, usize),
+    #[error("DimensionLargerError: dimension: {0}, expected: <={1}")]
+    DimensionLargerError(usize, usize),
     #[error("IndexError: shape: {0:?}, index: {1:?}")]
     IndexError(Vec<usize>, Vec<usize>),
     #[error("CastError: type: {0}")]
@@ -18,6 +24,8 @@ pub enum TensorError {
     NotVectorError(Vec<usize>),
     #[error("InvalidArgumentError: {0}")]
     InvalidArgumentError(String),
+    #[error("EmptyTensorError: The tensor is empty.")]
+    EmptyTensorError(),
     #[error("NewRandomNormalError: Failed to create a normal distribution.")]
     NewRandomNormalError(),
 }
@@ -70,6 +78,60 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<TensorError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "ShapeSizeError: data: 1, shape: 2");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_dimension() -> Result<()> {
+        Err(TensorError::DimensionError(1, 2).into())
+    }
+
+    #[test]
+    fn tensor_error_dimension() -> Result<()> {
+        match error_dimension() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(e.to_string(), "DimensionError: dimension: 1, expected: 2");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_dimension_smaller() -> Result<()> {
+        Err(TensorError::DimensionSmallerError(1, 2).into())
+    }
+
+    #[test]
+    fn tensor_error_dimension_smaller() -> Result<()> {
+        match error_dimension_smaller() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(
+                    e.to_string(),
+                    "DimensionSmallerError: dimension: 1, expected: >=2"
+                );
+                Ok(())
+            }
+        }
+    }
+
+    fn error_dimension_larger() -> Result<()> {
+        Err(TensorError::DimensionLargerError(3, 2).into())
+    }
+
+    #[test]
+    fn tensor_error_dimension_larger() -> Result<()> {
+        match error_dimension_larger() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(
+                    e.to_string(),
+                    "DimensionLargerError: dimension: 3, expected: <=2"
+                );
                 Ok(())
             }
         }
@@ -150,6 +212,25 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<TensorError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "InvalidArgumentError: Error");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_empty_tensor() -> Result<()> {
+        Err(TensorError::EmptyTensorError().into())
+    }
+
+    #[test]
+    fn tensor_error_empty_tensor() -> Result<()> {
+        match error_empty_tensor() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(
+                    e.to_string(),
+                    "EmptyTensorError: The tensor is empty."
+                );
                 Ok(())
             }
         }

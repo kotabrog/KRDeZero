@@ -186,6 +186,27 @@ impl<T> Tensor<T> {
     }
 }
 
+impl<T> Tensor<T>
+where
+    T: Zero + One + Clone
+{
+    /// Create an identity matrix
+    /// 
+    /// # Arguments
+    /// 
+    /// * `n` - The size of the matrix
+    pub fn eye(n: usize) -> Self {
+        let mut data = vec![T::zero(); n * n];
+        for i in 0..n {
+            data[i * n + i] = T::one();
+        }
+        Self {
+            data,
+            shape: vec![n, n],
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -350,5 +371,26 @@ mod tests {
         let x = Tensor::<i32>::scalar(10);
         assert_eq!(x.get_data(), &vec![10]);
         assert_eq!(x.get_shape(), &vec![]);
+    }
+
+    #[test]
+    fn vector_normal() {
+        let x = Tensor::<i32>::vector(vec![1, 2, 3, 4, 5, 6]);
+        assert_eq!(x.get_data(), &vec![1, 2, 3, 4, 5, 6]);
+        assert_eq!(x.get_shape(), &vec![6]);
+    }
+
+    #[test]
+    fn eye_normal() {
+        let x = Tensor::<i32>::eye(3);
+        assert_eq!(x.get_data(), &vec![1, 0, 0, 0, 1, 0, 0, 0, 1]);
+        assert_eq!(x.get_shape(), &vec![3, 3]);
+    }
+
+    #[test]
+    fn eye_zero() {
+        let x = Tensor::<i32>::eye(0);
+        assert_eq!(x.get_data(), &vec![]);
+        assert_eq!(x.get_shape(), &vec![0, 0]);
     }
 }

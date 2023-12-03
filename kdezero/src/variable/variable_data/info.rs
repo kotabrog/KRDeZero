@@ -1,4 +1,4 @@
-use super::VariableData;
+use super::{VariableData, VariableType};
 
 impl VariableData {
     pub fn shape(&self) -> &[usize] {
@@ -58,6 +58,18 @@ impl VariableData {
             Self::I64(_) => "i64",
             Self::USIZE(_) => "usize",
             Self::Bool(_) => "bool",
+        }
+    }
+
+    pub fn get_variable_type(&self) -> VariableType {
+        match self {
+            Self::None => VariableType::None,
+            Self::F32(_) => VariableType::F32,
+            Self::F64(_) => VariableType::F64,
+            Self::I32(_) => VariableType::I32,
+            Self::I64(_) => VariableType::I64,
+            Self::USIZE(_) => VariableType::USIZE,
+            Self::Bool(_) => VariableType::Bool,
         }
     }
 }

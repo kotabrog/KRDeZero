@@ -10,6 +10,8 @@ pub enum KDeZeroError {
     OutOfRangeVariableCount(usize, usize, usize),
     #[error("InvalidDimension: expected {0}, actual {1}")]
     InvalidDimension(usize, usize),
+    #[error("LargeDimension: expected <= {1} actual {0}")]
+    LargeDimension(usize, usize),
     #[error("NotImplementedType: {0} is not implemented for {1}")]
     NotImplementedType(String, String),
     #[error("NotCollectType: {0} is not collect type. Expected: {1}")]

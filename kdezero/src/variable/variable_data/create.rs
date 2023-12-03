@@ -72,4 +72,18 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn eye_like_type(&self, n: usize) -> Result<Self> {
+        Ok(match self {
+            Self::F32(_) => Self::F32(Tensor::eye(n)),
+            Self::F64(_) => Self::F64(Tensor::eye(n)),
+            Self::I32(_) => Self::I32(Tensor::eye(n)),
+            Self::I64(_) => Self::I64(Tensor::eye(n)),
+            Self::USIZE(_) => Self::USIZE(Tensor::eye(n)),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                self.data_type().to_string(),
+                "eye_like".to_string(),
+            ).into()),
+        })
+    }
 }

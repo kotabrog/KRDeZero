@@ -125,6 +125,17 @@ impl VariableData {
         })
     }
 
+    pub fn log(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.log().into(),
+            VariableData::F64(x) => x.log().into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "log".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
     pub fn pow(&self, n: f64) -> Result<VariableData> {
         Ok(match self {
             VariableData::F32(x) => x.powf(n as f32).into(),
@@ -200,6 +211,30 @@ impl VariableData {
         })
     }
 
+    pub fn log_sum_exp(&self, axis: usize) -> Result<VariableData> {
+        if self.ndim() <= axis {
+            return Err(KDeZeroError::LargeDimension(
+                axis,
+                self.ndim() - 1,
+            ).into());
+        }
+        match self {
+            VariableData::F32(_) | VariableData::F64(_) => {}
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "log_sum_exp".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        }
+        let x_max = self.max_with_axis(axis, true)?
+            .broadcast_to(self.shape())?;
+        let y = self.sub(&x_max)?
+            .exp()?
+            .sum(Some(&vec![axis]), true)?
+            .log()?
+            .broadcast_to(self.shape())?;
+        Ok(x_max.add(&y)?)
+    }
+
     pub fn matmul(&self, other: &VariableData) -> Result<VariableData> {
         Ok(match (self, other) {
             (VariableData::F32(x), VariableData::F32(y)) => x.matmul(y)?.into(),
@@ -254,6 +289,122 @@ impl VariableData {
             VariableData::Bool(x) => x.broadcast_to(shape)?.into(),
             _ => return Err(KDeZeroError::NotImplementedType(
                 "broadcast_to".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn slice_with_one_index(&self, index: usize) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.slice_with_one_index(index)?.into(),
+            VariableData::F64(x) => x.slice_with_one_index(index)?.into(),
+            VariableData::I32(x) => x.slice_with_one_index(index)?.into(),
+            VariableData::I64(x) => x.slice_with_one_index(index)?.into(),
+            VariableData::USIZE(x) => x.slice_with_one_index(index)?.into(),
+            VariableData::Bool(x) => x.slice_with_one_index(index)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "slice_with_one_index".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn slice_with_one_indexes(&self, indexes: &[usize]) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.slice_with_one_indexes(indexes)?.into(),
+            VariableData::F64(x) => x.slice_with_one_indexes(indexes)?.into(),
+            VariableData::I32(x) => x.slice_with_one_indexes(indexes)?.into(),
+            VariableData::I64(x) => x.slice_with_one_indexes(indexes)?.into(),
+            VariableData::USIZE(x) => x.slice_with_one_indexes(indexes)?.into(),
+            VariableData::Bool(x) => x.slice_with_one_indexes(indexes)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "slice_with_one_indexes".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn slice_with_indexes(&self, indexes: Vec<Vec<usize>>) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.slice_with_indexes(indexes)?.into(),
+            VariableData::F64(x) => x.slice_with_indexes(indexes)?.into(),
+            VariableData::I32(x) => x.slice_with_indexes(indexes)?.into(),
+            VariableData::I64(x) => x.slice_with_indexes(indexes)?.into(),
+            VariableData::USIZE(x) => x.slice_with_indexes(indexes)?.into(),
+            VariableData::Bool(x) => x.slice_with_indexes(indexes)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "slice_with_indexes".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn add_at_one_index(&self, rhs: &VariableData, index: usize) -> Result<VariableData> {
+        Ok(match (self, rhs) {
+            (VariableData::F32(x), VariableData::F32(y)) =>
+                x.add_at_one_index(y, index)?.into(),
+            (VariableData::F64(x), VariableData::F64(y)) =>
+                x.add_at_one_index(y, index)?.into(),
+            (VariableData::I32(x), VariableData::I32(y)) =>
+                x.add_at_one_index(y, index)?.into(),
+            (VariableData::I64(x), VariableData::I64(y)) =>
+                x.add_at_one_index(y, index)?.into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) =>
+                x.add_at_one_index(y, index)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "add_at_one_index".to_string(),
+                format!("{:?}, {:?}", self.data_type(), rhs.data_type()),
+            ).into()),
+        })
+    }
+
+    pub fn add_at_one_indexes(&self, rhs: &VariableData, indexes: &[usize]) -> Result<VariableData> {
+        Ok(match (self, rhs) {
+            (VariableData::F32(x), VariableData::F32(y)) =>
+                x.add_at_one_indexes(y, indexes)?.into(),
+            (VariableData::F64(x), VariableData::F64(y)) =>
+                x.add_at_one_indexes(y, indexes)?.into(),
+            (VariableData::I32(x), VariableData::I32(y)) =>
+                x.add_at_one_indexes(y, indexes)?.into(),
+            (VariableData::I64(x), VariableData::I64(y)) =>
+                x.add_at_one_indexes(y, indexes)?.into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) =>
+                x.add_at_one_indexes(y, indexes)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "add_at_one_indexes".to_string(),
+                format!("{:?}, {:?}", self.data_type(), rhs.data_type()),
+            ).into()),
+        })
+    }
+
+    pub fn add_at_with_indexes(&self, rhs: &VariableData, indexes: Vec<Vec<usize>>) -> Result<VariableData> {
+        Ok(match (self, rhs) {
+            (VariableData::F32(x), VariableData::F32(y)) =>
+                x.add_at_with_indexes(y, indexes)?.into(),
+            (VariableData::F64(x), VariableData::F64(y)) =>
+                x.add_at_with_indexes(y, indexes)?.into(),
+            (VariableData::I32(x), VariableData::I32(y)) =>
+                x.add_at_with_indexes(y, indexes)?.into(),
+            (VariableData::I64(x), VariableData::I64(y)) =>
+                x.add_at_with_indexes(y, indexes)?.into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) =>
+                x.add_at_with_indexes(y, indexes)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "add_at_with_indexes".to_string(),
+                format!("{:?}, {:?}", self.data_type(), rhs.data_type()),
+            ).into()),
+        })
+    }
+
+    pub fn max_with_axis(&self, axis: usize, keepdims: bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.max_with_axis(axis, keepdims)?.into(),
+            VariableData::F64(x) => x.max_with_axis(axis, keepdims)?.into(),
+            VariableData::I32(x) => x.max_with_axis(axis, keepdims)?.into(),
+            VariableData::I64(x) => x.max_with_axis(axis, keepdims)?.into(),
+            VariableData::USIZE(x) => x.max_with_axis(axis, keepdims)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "max_with_axis".to_string(),
                 self.data_type().to_string(),
             ).into()),
         })
@@ -491,6 +642,33 @@ mod tests {
     }
 
     #[test]
+    fn log_f32() -> Result<()> {
+        let x = VariableData::from(2.0f32);
+        let y = x.log()?;
+        assert_eq!(y, VariableData::from(2.0f32.ln()));
+        Ok(())
+    }
+
+    #[test]
+    fn error_log_bool() -> Result<()> {
+        let x = VariableData::from(true);
+        match x.log() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "log".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn pow_f32() -> Result<()> {
         let x = VariableData::from(2.0f32);
         let y = x.pow(3.0)?;
@@ -651,6 +829,50 @@ mod tests {
     }
 
     #[test]
+    fn log_sum_exp_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let _ = x.log_sum_exp(1)?;
+        Ok(())
+    }
+
+    #[test]
+    fn error_log_sum_exp_axis_too_large() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        match x.log_sum_exp(2) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::LargeDimension(
+                        2, 1
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn error_log_sum_exp_bool() -> Result<()> {
+        let x = VariableData::from(Tensor::full(true, [2, 3]));
+        match x.log_sum_exp(1) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "log_sum_exp".to_string(),
+                        x.data_type().to_string(),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
     fn matmul_f32() -> Result<()> {
         let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
         let y = VariableData::from(Tensor::<f64>::arrange([3, 1])?);
@@ -736,6 +958,88 @@ mod tests {
                 );
             }
         }
+        Ok(())
+    }
+
+    #[test]
+    fn slice_with_one_index_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = x.slice_with_one_index(1)?;
+        assert_eq!(y, Tensor::<f64>::new([3.0, 4.0, 5.0], [3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn slice_with_one_indexes_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = x.slice_with_one_indexes(&[1, 1])?;
+        assert_eq!(y, Tensor::<f64>::new([
+            3.0, 4.0, 5.0, 3.0, 4.0, 5.0
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn slice_with_indexes_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = x.slice_with_indexes(vec![
+            vec![0, 1],
+            vec![1, 2],
+        ])?;
+        assert_eq!(y, Tensor::<f64>::new([1.0, 5.0], [2])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn add_at_one_index_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = VariableData::from(Tensor::<f64>::arrange([3,])?);
+        let z = x.add_at_one_index(&y, 1)?;
+        assert_eq!(z, Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            3.0, 5.0, 7.0,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn add_at_one_indexes_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let y = VariableData::from(Tensor::<f64>::arrange([2, 3])?);
+        let z = x.add_at_one_indexes(&y, &[1, 1])?;
+        assert_eq!(z, Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            6.0, 9.0, 12.0,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn add_at_with_indexes_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::arrange([2, 2, 2])?);
+        let y = VariableData::from(Tensor::<f64>::arrange([2, 2])?);
+        let z = x.add_at_with_indexes(&y, vec![
+            vec![1, 0],
+            vec![0, 1],
+        ])?;
+        assert_eq!(z, Tensor::<f64>::new([
+            0.0, 1.0, 4.0, 6.0,
+            4.0, 6.0, 6.0, 7.0
+        ], [2, 2, 2])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn max_with_axis_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            3.0, 5.0, 7.0,
+        ], [2, 3])?);
+        let y = x.max_with_axis(1, false)?;
+        assert_eq!(y, Tensor::<f64>::new([
+            2.0,
+            7.0,
+        ], [2])?.into());
         Ok(())
     }
 }

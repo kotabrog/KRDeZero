@@ -18,6 +18,10 @@ mod matmul;
 mod mean_squared_error;
 mod linear;
 mod sigmoid;
+mod get_item;
+mod softmax;
+mod log;
+mod softmax_cross_entropy;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -39,3 +43,10 @@ pub use matmul::{MatMul, matmul};
 pub use mean_squared_error::{MeanSquaredError, mean_squared_error};
 pub use linear::{Linear, linear};
 pub use sigmoid::{Sigmoid, sigmoid};
+pub use get_item::{
+    GetItem, GetItemGrad, SlicePattern,
+    get_item, get_item_with_one_index, get_item_with_one_indexes, get_item_with_indexes,
+};
+pub use softmax::{Softmax, softmax};
+pub use log::{Log, log};
+pub use softmax_cross_entropy::{SoftmaxCrossEntropy, softmax_cross_entropy};

@@ -11,6 +11,9 @@ mod random;
 mod convert;
 pub mod iter;
 mod display;
+mod slice;
+mod ops_at;
+mod compare;
 
 use anyhow::Result;
 pub use random::TensorRng;

@@ -1460,3 +1460,45 @@ fn step46() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step47() -> Result<()> {
+    use ktensor::Tensor;
+    use kdezero::Variable;
+    use kdezero::function::{
+        get_item_with_one_index,
+        get_item_with_one_indexes,
+        get_item_with_indexes,
+    };
+
+    let x = Variable::new(
+        Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            vec![2, 3])?.into());
+    let mut y = get_item_with_one_index(&x, 1)?;
+    println!("{}", y);
+    assert_eq!(
+        *y.data(),
+        Tensor::new(vec![4.0, 5.0, 6.0], vec![3])?.into());
+
+    y.backward()?;
+    println!("{}", x.grad_result()?);
+    assert_eq!(
+        *x.grad_result()?.data(),
+        Tensor::new(vec![0., 0., 0., 1., 1., 1.], vec![2, 3])?.into());
+
+    let indices = vec![0, 0, 1];
+    let y = get_item_with_one_indexes(&x, &indices)?;
+    println!("{}", y);
+    assert_eq!(
+        *y.data(),
+        Tensor::new(vec![1., 2., 3., 1., 2., 3., 4., 5., 6.], vec![3, 3])?.into());
+
+    let indices = vec![vec![0, 1], vec![2, 2]];
+    let y = get_item_with_indexes(&x, &indices)?;
+    println!("{}", y);
+    assert_eq!(
+        *y.data(),
+        Tensor::new(vec![3., 6.], vec![2])?.into());
+
+    Ok(())
+}
