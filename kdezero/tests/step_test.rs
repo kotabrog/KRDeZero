@@ -1502,3 +1502,75 @@ fn step47() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn step48() -> Result<()> {
+    use ktensor::tensor::TensorRng;
+    use kdezero::{Variable, Model, Optimizer};
+    use kdezero::function::{softmax_cross_entropy, sigmoid};
+    use kdezero::model::MLP;
+    use kdezero::optimizer::SGD;
+    use kdezero::data_set::sample::get_spiral;
+
+    let layer = MLP::new(&[2, 10, 3], sigmoid)?;
+    let model = Model::new(layer);
+    let opt_content = SGD::new(1.0);
+    let mut optimizer = Optimizer::new(opt_content);
+    optimizer.set_model(model);
+
+    let (x, t) = get_spiral(true)?;
+
+    let max_epoch = 300;
+    let batch_size = 30;
+    let data_size = x.shape()[0];
+    let max_iter = (data_size - 1) / batch_size + 1;
+
+    let mut rng = TensorRng::new();
+
+    for epoch in 0..max_epoch {
+        let batch_index = rng.permutation(data_size);
+        let mut sum_loss = 0.0;
+
+        for i in 0..max_iter {
+            let batch_start = i * batch_size;
+            let batch_end = std::cmp::min(batch_start + batch_size, data_size);
+            let batch_index = batch_index[batch_start..batch_end]
+                .iter().map(|&i| i as usize).collect::<Vec<_>>();
+            let batch_x: Variable = x.data()
+                .slice_with_one_indexes(&batch_index)?
+                .into();
+            let batch_t: Variable = t.data()
+                .slice_with_one_indexes(&batch_index)?
+                .into();
+
+            let model = optimizer.get_model_mut_result()?;
+            let y = model.forward(&[batch_x])?.remove(0);
+            let mut loss = softmax_cross_entropy(&y, &batch_t)?;
+            model.clear_grads();
+            loss.backward()?;
+            optimizer.update()?;
+
+            sum_loss += *loss.data()
+                .to_f64_tensor()?.get_data().get(0).unwrap()
+                * batch_size as f64;
+        }
+
+        let avg_loss = sum_loss / data_size as f64;
+        if epoch % 10 == 0 || epoch == max_epoch - 1 {
+            println!("epoch {} loss {:.10}", epoch, avg_loss);
+        }
+    }
+
+    let (x, t) = get_spiral(false)?;
+    let model = optimizer.get_model_mut_result()?;
+    let y = model.forward(&[x])?.remove(0);
+    let y = y.data().to_f64_tensor()?
+        .argmax_with_axis(1, false)?;
+    let sum_true = y.iter()
+        .zip(t.data().to_usize_tensor()?.iter())
+        .map(|(&y, &t)| if y == t { 1 } else { 0 })
+        .sum::<usize>();
+    let accuracy = sum_true as f64 / y.get_shape()[0] as f64;
+    println!("accuracy: {:.4}", accuracy);
+    Ok(())
+}

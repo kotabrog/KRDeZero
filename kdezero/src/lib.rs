@@ -8,6 +8,7 @@ pub mod layer;
 mod utility;
 pub mod model;
 pub mod optimizer;
+pub mod data_set;
 
 pub use variable::{Variable, VariableData, VariableWeak, VariableType};
 pub use function::{Function, FunctionInner, FunctionContent};
