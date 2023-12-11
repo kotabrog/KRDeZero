@@ -1,8 +1,8 @@
 use anyhow::Result;
 use ktensor::{Tensor, tensor::TensorRng};
-use crate::Variable;
+use super::super::DataSet;
 
-pub fn get_spiral(train: bool) -> Result<(Variable, Variable)> {
+pub fn get_spiral(train: bool) -> Result<(Tensor<f64>, Tensor<usize>)> {
     let seed = if train { 1984 } else { 2020 };
     let mut rng = TensorRng::new_from_seed(seed);
 
@@ -34,5 +34,32 @@ pub fn get_spiral(train: bool) -> Result<(Variable, Variable)> {
     let indices = rng.permutation(data_size);
     let x = x.slice_with_one_indexes(&indices)?;
     let t = t.slice_with_one_indexes(&indices)?;
-    Ok((x.into(), t.into()))
+    Ok((x, t))
+}
+
+pub struct Spiral {
+    pub train: bool,
+    pub data: Tensor<f64>,
+    pub label: Tensor<usize>,
+}
+
+impl Spiral {
+    pub fn new(train: bool) -> Result<Self> {
+        let (x, t) = get_spiral(train)?;
+        Ok(Self {
+            train,
+            data: x,
+            label: t,
+        })
+    }
+}
+
+impl DataSet<f64, usize> for Spiral {
+    fn get_all_data(&self) -> Result<Option<&Tensor<f64>>> {
+        Ok(Some(&self.data))
+    }
+
+    fn get_all_label(&self) -> Result<Option<&Tensor<usize>>> {
+        Ok(Some(&self.label))
+    }
 }

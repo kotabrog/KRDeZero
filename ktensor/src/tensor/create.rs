@@ -5,6 +5,45 @@ use crate::error::TensorError;
 
 impl<T> Tensor<T>
 where
+    T: Clone
+{
+    /// Create a tensor from tensor list
+    /// 
+    /// # Arguments
+    /// 
+    /// * `tensor_list` - The tensor list
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Self>` - Result of the creation
+    /// 
+    /// # Note
+    /// 
+    /// If the shape of the tensors in the list are not the same, `TensorError::ShapeError` is returned
+    pub fn from_tensor_list(tensor_list: &[&Self]) -> Result<Self> {
+        let len = tensor_list.len();
+        if len == 0 {
+            return Self::new(vec![], vec![0])
+        }
+        let mut data = Vec::new();
+        let one_shape = tensor_list[0].get_shape();
+        for tensor in tensor_list {
+            if one_shape != tensor.get_shape() {
+                return Err(TensorError::ShapeError(
+                    one_shape.clone(),
+                    tensor.get_shape().clone()
+                ).into())
+            }
+            data.extend_from_slice(tensor.get_data());
+        }
+        let mut shape = vec![len];
+        shape.extend_from_slice(one_shape);
+        Ok(Self { data, shape })
+    }
+}
+
+impl<T> Tensor<T>
+where
     T: NumCast,
 {
     /// Create a tensor with the specified shape with evenly spaced values
@@ -210,6 +249,31 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn from_tensor_list_normal() {
+        let x = Tensor::new([1, 2, 3, 4, 5, 6], [3, 2]).unwrap();
+        let y = Tensor::new([7, 8, 9, 10, 11, 12], [3, 2]).unwrap();
+        let z = Tensor::from_tensor_list(&[&x, &y]).unwrap();
+        assert_eq!(z.get_data(), &vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12]);
+        assert_eq!(z.get_shape(), &vec![2, 3, 2]);
+    }
+
+    #[test]
+    fn from_tensor_list_empty() {
+        let x = Tensor::<f32>::from_tensor_list(&[]).unwrap();
+        assert_eq!(x.get_data(), &vec![]);
+        assert_eq!(x.get_shape(), &vec![0]);
+    }
+
+    #[test]
+    fn from_tensor_list_zero_dim() {
+        let x = Tensor::new([1.0], []).unwrap();
+        let y = Tensor::new([2.0], []).unwrap();
+        let z = Tensor::from_tensor_list(&[&x, &y]).unwrap();
+        assert_eq!(z.get_data(), &vec![1.0, 2.0]);
+        assert_eq!(z.get_shape(), &vec![2]);
+    }
 
     #[test]
     fn arrange_normal() {

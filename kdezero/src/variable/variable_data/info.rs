@@ -72,4 +72,11 @@ impl VariableData {
             Self::Bool(_) => VariableType::Bool,
         }
     }
+
+    pub fn is_none(&self) -> bool {
+        match self {
+            Self::None => true,
+            _ => false,
+        }
+    }
 }

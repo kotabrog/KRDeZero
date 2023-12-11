@@ -5,6 +5,10 @@ use crate::error::KDeZeroError;
 use super::{VariableData, VariableType};
 
 impl VariableData {
+    pub fn none() -> Self {
+        Self::None
+    }
+
     pub fn zeros_like(&self) -> Result<Self> {
         Ok(match self {
             Self::F32(x) => Self::F32(Tensor::zeros_like(x)),

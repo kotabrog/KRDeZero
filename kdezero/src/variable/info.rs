@@ -28,6 +28,11 @@ impl Variable {
         Ref::map(inner, |inner| inner.data.data_type())
     }
 
+    pub fn is_none(&self) -> bool {
+        let inner = self.inner.borrow();
+        inner.data.is_none()
+    }
+
     pub fn id(&self) -> usize {
         Rc::as_ptr(&self.inner) as usize
     }

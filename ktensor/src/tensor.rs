@@ -84,6 +84,13 @@ mod tests {
     }
 
     #[test]
+    fn new_empty() {
+        let x = Tensor::<f64>::new([], [0]).unwrap();
+        assert_eq!(x.get_data(), &vec![]);
+        assert_eq!(x.get_shape(), &vec![0]);
+    }
+
+    #[test]
     #[should_panic]
     fn new_error_mismatch_shape() {
         let _ = Tensor::new([0.0, 1.0, 2.0], [2,]).unwrap();
