@@ -1657,3 +1657,81 @@ fn step49() -> Result<()> {
     println!("accuracy: {:.4}", accuracy);
     Ok(())
 }
+
+#[test]
+fn step50() -> Result<()> {
+    use kdezero::{Model, Optimizer};
+    use kdezero::function::{softmax_cross_entropy, sigmoid};
+    use kdezero::model::MLP;
+    use kdezero::optimizer::SGD;
+    use kdezero::data_set::{sample::Spiral, DataLoader};
+    use kdezero::test_utility::accuracy;
+    use kdezero::no_grad;
+
+    let layer = MLP::new(&[2, 10, 3], sigmoid)?;
+    let model = Model::new(layer);
+    let opt_content = SGD::new(1.0);
+    let mut optimizer = Optimizer::new(opt_content);
+    optimizer.set_model(model);
+
+    let train_set = Spiral::new(true)?;
+    let mut train_loader = DataLoader::new(
+        Box::new(train_set), 30, true)?;
+    let test_set = Spiral::new(false)?;
+    let mut test_loader = DataLoader::new(
+        Box::new(test_set), 30, false)?;
+
+    let max_epoch = 300;
+
+    for epoch in 0..max_epoch {
+        let mut sum_loss = 0.0;
+        let mut sum_acc = 0.0;
+
+        for r in train_loader.iter() {
+            let (x, t) = r?;
+            let model = optimizer.get_model_mut_result()?;
+            let t = t.unwrap();
+            let len = t.len();
+            let y = model.forward(&[x.into()])?.remove(0);
+            let mut loss = softmax_cross_entropy(&y, &t.clone().into())?;
+            model.clear_grads();
+            loss.backward()?;
+            optimizer.update()?;
+
+            sum_loss += *loss.data()
+                .to_f64_tensor()?.get_data().get(0).unwrap()
+                * len as f64;
+            sum_acc += accuracy(
+                y.data().to_f64_tensor()?, &t)? * len as f64;
+        }
+
+        if epoch % 10 == 0 || epoch == max_epoch - 1 {
+            let avg_loss = sum_loss / train_loader.len() as f64;
+            let avg_acc = sum_acc / train_loader.len() as f64;
+            println!("epoch {} loss {:.10} accuracy {:.10}", epoch, avg_loss, avg_acc);
+
+            let mut sum_loss = 0.0;
+            let mut sum_acc = 0.0;
+            for r in test_loader.iter() {
+                let (x, t) = r?;
+                let model = optimizer.get_model_mut_result()?;
+                let t = t.unwrap();
+                let len = t.len();
+                {
+                    let _guard = no_grad();
+                    let y = model.forward(&[x.into()])?.remove(0);
+                    let loss = softmax_cross_entropy(&y, &t.clone().into())?;
+                    sum_loss += *loss.data()
+                        .to_f64_tensor()?.get_data().get(0).unwrap()
+                        * len as f64;
+                    sum_acc += accuracy(
+                        y.data().to_f64_tensor()?, &t)? * len as f64;
+                }
+            }
+            let avg_loss = sum_loss / test_loader.len() as f64;
+            let avg_acc = sum_acc / test_loader.len() as f64;
+            println!("test loss {:.10} accuracy {:.10}", avg_loss, avg_acc);
+        }
+    }
+    Ok(())
+}

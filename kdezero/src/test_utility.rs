@@ -50,6 +50,19 @@ pub fn numerical_diff(f: &mut dyn FunctionContent, x: &Variable, eps: f64) -> Re
     Ok(x)
 }
 
+pub fn accuracy<T>(y: &Tensor<T>, t: &Tensor<usize>) -> Result<f64>
+where
+    T: PartialOrd + Clone
+{
+    let y = y.argmax_with_axis(1, false)?;
+    let sum_true = y.iter()
+        .zip(t.iter())
+        .map(|(&y, &t)| if y == t { 1 } else { 0 })
+        .sum::<usize>();
+    let accuracy = sum_true as f64 / y.get_shape()[0] as f64;
+    Ok(accuracy)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

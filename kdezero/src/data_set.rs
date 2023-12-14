@@ -1,7 +1,10 @@
 pub mod sample;
+mod data_loader;
 
 use anyhow::Result;
 use ktensor::Tensor;
+
+pub use data_loader::DataLoader;
 
 pub type Transform<T> = fn(&Tensor<T>) -> Result<Tensor<T>>;
 
