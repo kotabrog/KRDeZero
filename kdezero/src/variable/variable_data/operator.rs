@@ -409,6 +409,89 @@ impl VariableData {
             ).into()),
         })
     }
+
+    pub fn maximum(&self, rhs: &VariableData) -> Result<VariableData> {
+        Ok(match (self, rhs) {
+            (VariableData::F32(x), VariableData::F32(y)) =>
+                x.maximum(y)?.into(),
+            (VariableData::F64(x), VariableData::F64(y)) =>
+                x.maximum(y)?.into(),
+            (VariableData::I32(x), VariableData::I32(y)) =>
+                x.maximum(y)?.into(),
+            (VariableData::I64(x), VariableData::I64(y)) =>
+                x.maximum(y)?.into(),
+            (VariableData::USIZE(x), VariableData::USIZE(y)) =>
+                x.maximum(y)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "maximum".to_string(),
+                format!("{:?}, {:?}", self.data_type(), rhs.data_type()),
+            ).into()),
+        })
+    }
+
+    pub fn create_binyary_mask_from_condition_f32(&self, condition: fn (&f32) -> bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.create_binyary_mask_from_condition(condition)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "create_binyary_mask_from_condition".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn create_binyary_mask_from_condition_f64(&self, condition: fn (&f64) -> bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F64(x) => x.create_binyary_mask_from_condition(condition)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "create_binyary_mask_from_condition".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn create_binyary_mask_from_condition_i32(&self, condition: fn (&i32) -> bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::I32(x) => x.create_binyary_mask_from_condition(condition)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "create_binyary_mask_from_condition".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn create_binyary_mask_from_condition_i64(&self, condition: fn (&i64) -> bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::I64(x) => x.create_binyary_mask_from_condition(condition)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "create_binyary_mask_from_condition".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn create_binyary_mask_from_condition_usize(&self, condition: fn (&usize) -> bool) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::USIZE(x) => x.create_binyary_mask_from_condition(condition)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "create_binyary_mask_from_condition".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
+
+    pub fn greater_zero(&self) -> Result<VariableData> {
+        Ok(match self {
+            VariableData::F32(x) => x.create_binyary_mask_from_condition(|x| *x > 0.0)?.into(),
+            VariableData::F64(x) => x.create_binyary_mask_from_condition(|x| *x > 0.0)?.into(),
+            VariableData::I32(x) => x.create_binyary_mask_from_condition(|x| *x > 0)?.into(),
+            VariableData::I64(x) => x.create_binyary_mask_from_condition(|x| *x > 0)?.into(),
+            VariableData::USIZE(x) => x.create_binyary_mask_from_condition(|x| *x > 0)?.into(),
+            _ => return Err(KDeZeroError::NotImplementedType(
+                "greater_zero".to_string(),
+                self.data_type().to_string(),
+            ).into()),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -1040,6 +1123,120 @@ mod tests {
             2.0,
             7.0,
         ], [2])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn maximum_normal_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            4.0, 6.0, 8.0
+        ], [2, 3])?);
+        let y = VariableData::from(Tensor::<f64>::new([
+            1.0, 2.0, 3.0,
+            3.0, 5.0, 7.0,
+        ], [2, 3])?);
+        let z = x.maximum(&y)?;
+        assert_eq!(z, Tensor::<f64>::new([
+            1.0, 2.0, 3.0,
+            4.0, 6.0, 8.0,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn error_maximum_type() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            4.0, 6.0, 8.0
+        ], [2, 3])?);
+        let y = VariableData::from(Tensor::<f32>::new([
+            1.0, 2.0, 3.0,
+            3.0, 5.0, 7.0,
+        ], [2, 3])?);
+        match x.maximum(&y) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<KDeZeroError>()?;
+                assert_eq!(
+                    e,
+                    KDeZeroError::NotImplementedType(
+                        "maximum".to_string(),
+                        format!("{:?}, {:?}", x.data_type(), y.data_type()),
+                    )
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_f32() -> Result<()> {
+        let x = VariableData::from(Tensor::<f32>::new([
+            0.0, 1.0, 2.0,
+            4.0, 6.0, 8.0
+        ], [2, 3])?);
+        let y = x.create_binyary_mask_from_condition_f32(|x| *x > 2.0)?;
+        assert_eq!(y, Tensor::<f32>::new([
+            0.0, 0.0, 0.0,
+            1.0, 1.0, 1.0,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_f64() -> Result<()> {
+        let x = VariableData::from(Tensor::<f64>::new([
+            0.0, 1.0, 2.0,
+            4.0, 6.0, 8.0
+        ], [2, 3])?);
+        let y = x.create_binyary_mask_from_condition_f64(|x| *x > 2.0)?;
+        assert_eq!(y, Tensor::<f64>::new([
+            0.0, 0.0, 0.0,
+            1.0, 1.0, 1.0,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_i32() -> Result<()> {
+        let x = VariableData::from(Tensor::<i32>::new([
+            0, 1, 2,
+            4, 6, 8
+        ], [2, 3])?);
+        let y = x.create_binyary_mask_from_condition_i32(|x| *x > 2)?;
+        assert_eq!(y, Tensor::<i32>::new([
+            0, 0, 0,
+            1, 1, 1,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_i64() -> Result<()> {
+        let x = VariableData::from(Tensor::<i64>::new([
+            0, 1, 2,
+            4, 6, 8
+        ], [2, 3])?);
+        let y = x.create_binyary_mask_from_condition_i64(|x| *x > 2)?;
+        assert_eq!(y, Tensor::<i64>::new([
+            0, 0, 0,
+            1, 1, 1,
+        ], [2, 3])?.into());
+        Ok(())
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_usize() -> Result<()> {
+        let x = VariableData::from(Tensor::<usize>::new([
+            0, 1, 2,
+            4, 6, 8
+        ], [2, 3])?);
+        let y = x.create_binyary_mask_from_condition_usize(|x| *x > 2)?;
+        assert_eq!(y, Tensor::<usize>::new([
+            0, 0, 0,
+            1, 1, 1,
+        ], [2, 3])?.into());
         Ok(())
     }
 }

@@ -9,7 +9,7 @@ pub struct MLP {
 }
 
 impl MLP {
-    pub fn new<F>(sizes: &[usize], activation: F) -> Result<Self> 
+    pub fn new<F>(sizes: &[usize], activation: F, variable_type: VariableType) -> Result<Self> 
     where
         F: Fn(&Variable) -> Result<Variable> + 'static
     {
@@ -20,7 +20,7 @@ impl MLP {
                     sizes[i],
                     sizes[i + 1],
                     true,
-                    VariableType::F64
+                    variable_type
             )?);
             layer.push(l);
         }

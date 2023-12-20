@@ -1292,11 +1292,11 @@ fn step45_1() -> Result<()> {
 fn step45_2() -> Result<()> {
     use std::fs::create_dir;
     use ktensor::{Tensor, tensor::TensorRng};
-    use kdezero::{Variable, Model};
+    use kdezero::{Variable, Model, VariableType};
     use kdezero::function::{mean_squared_error, sigmoid};
     use kdezero::model::MLP;
 
-    let layer = MLP::new(&[1, 10, 1], sigmoid)?;
+    let layer = MLP::new(&[1, 10, 1], sigmoid, VariableType::F64)?;
     let mut model = Model::new(layer);
 
     let mut rng = TensorRng::new();
@@ -1387,13 +1387,13 @@ fn step45_2() -> Result<()> {
 fn step46() -> Result<()> {
     use std::fs::create_dir;
     use ktensor::{Tensor, tensor::TensorRng};
-    use kdezero::{Variable, Model, Optimizer};
+    use kdezero::{Variable, Model, Optimizer, VariableType};
     use kdezero::function::{mean_squared_error, sigmoid};
     use kdezero::model::MLP;
     // use kdezero::optimizer::SGD;
     use kdezero::optimizer::MomentumSGD;
 
-    let layer = MLP::new(&[1, 10, 1], sigmoid)?;
+    let layer = MLP::new(&[1, 10, 1], sigmoid, VariableType::F64)?;
     let model = Model::new(layer);
     // let opt_content = SGD::new(0.2);
     let opt_content = MomentumSGD::new(0.01, 0.9);
@@ -1506,13 +1506,13 @@ fn step47() -> Result<()> {
 #[test]
 fn step48() -> Result<()> {
     use ktensor::tensor::TensorRng;
-    use kdezero::{Variable, Model, Optimizer};
+    use kdezero::{Variable, Model, Optimizer, VariableType};
     use kdezero::function::{softmax_cross_entropy, sigmoid};
     use kdezero::model::MLP;
     use kdezero::optimizer::SGD;
     use kdezero::data_set::sample::get_spiral;
 
-    let layer = MLP::new(&[2, 10, 3], sigmoid)?;
+    let layer = MLP::new(&[2, 10, 3], sigmoid, VariableType::F64)?;
     let model = Model::new(layer);
     let opt_content = SGD::new(1.0);
     let mut optimizer = Optimizer::new(opt_content);
@@ -1578,13 +1578,13 @@ fn step48() -> Result<()> {
 #[test]
 fn step49() -> Result<()> {
     use ktensor::tensor::{Tensor, TensorRng};
-    use kdezero::{Variable, Model, Optimizer};
+    use kdezero::{Variable, Model, Optimizer, VariableType};
     use kdezero::function::{softmax_cross_entropy, sigmoid};
     use kdezero::model::MLP;
     use kdezero::optimizer::SGD;
     use kdezero::data_set::{DataSet, sample::Spiral};
 
-    let layer = MLP::new(&[2, 10, 3], sigmoid)?;
+    let layer = MLP::new(&[2, 10, 3], sigmoid, VariableType::F64)?;
     let model = Model::new(layer);
     let opt_content = SGD::new(1.0);
     let mut optimizer = Optimizer::new(opt_content);
@@ -1660,7 +1660,7 @@ fn step49() -> Result<()> {
 
 #[test]
 fn step50() -> Result<()> {
-    use kdezero::{Model, Optimizer};
+    use kdezero::{Model, Optimizer, VariableType};
     use kdezero::function::{softmax_cross_entropy, sigmoid};
     use kdezero::model::MLP;
     use kdezero::optimizer::SGD;
@@ -1668,7 +1668,7 @@ fn step50() -> Result<()> {
     use kdezero::test_utility::accuracy;
     use kdezero::no_grad;
 
-    let layer = MLP::new(&[2, 10, 3], sigmoid)?;
+    let layer = MLP::new(&[2, 10, 3], sigmoid, VariableType::F64)?;
     let model = Model::new(layer);
     let opt_content = SGD::new(1.0);
     let mut optimizer = Optimizer::new(opt_content);
@@ -1729,6 +1729,109 @@ fn step50() -> Result<()> {
                 }
             }
             let avg_loss = sum_loss / test_loader.len() as f64;
+            let avg_acc = sum_acc / test_loader.len() as f64;
+            println!("test loss {:.10} accuracy {:.10}", avg_loss, avg_acc);
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn step51() -> Result<()> {
+    if std::env::var("LONG_TEST").is_err() {
+        println!("skip step51");
+        return Ok(());
+    }
+
+    use std::fs::create_dir;
+    use kdezero::{Model, Optimizer, VariableType};
+    use kdezero::function::{softmax_cross_entropy, relu};
+    use kdezero::model::MLP;
+    use kdezero::optimizer::SGD;
+    use kdezero::data_set::{sample::Mnist, DataLoader};
+    use kdezero::test_utility::accuracy;
+    use kdezero::no_grad;
+
+    match create_dir("output") {
+        Ok(_) => println!("Create data directory"),
+        Err(_) => {},
+    }
+    match create_dir("output/mnist") {
+        Ok(_) => println!("Create mnist directory"),
+        Err(_) => {},
+    }
+
+    let max_epoch = 2;
+    let batch_size = 100;
+    let hidden_size = 1000;
+
+    let layer = MLP::new(&[28 * 28, hidden_size, 10], relu, VariableType::F32)?;
+    let model = Model::new(layer);
+    let opt_content = SGD::new(1.0);
+    let mut optimizer = Optimizer::new(opt_content);
+    optimizer.set_model(model);
+
+    let train_set = Mnist::new(
+        true,
+        Some("output/mnist"),
+        |x| Ok(x.flatten() / 255.))?;
+    let mut train_loader = DataLoader::new(
+        Box::new(train_set), batch_size, true)?;
+    let test_set = Mnist::new(
+        false,
+        Some("output/mnist"),
+        |x| Ok(x.flatten() / 255.))?;
+    println!("make test loader");
+    let mut test_loader = DataLoader::new(
+        Box::new(test_set), batch_size, false)?;
+
+    for epoch in 0..max_epoch {
+        let mut sum_loss = 0.0;
+        let mut sum_acc = 0.0;
+        println!("epoch {}", epoch);
+
+        for r in train_loader.iter() {
+            let (x, t) = r?;
+            let model = optimizer.get_model_mut_result()?;
+            let t = t.unwrap();
+            let len = t.len();
+            let y = model.forward(&[x.into()])?.remove(0);
+            let mut loss = softmax_cross_entropy(&y, &t.clone().into())?;
+            model.clear_grads();
+            loss.backward()?;
+            optimizer.update()?;
+
+            sum_loss += *loss.data()
+                .to_f32_tensor()?.get_data().get(0).unwrap()
+                * len as f32;
+            sum_acc += accuracy(
+                y.data().to_f32_tensor()?, &t)? * len as f64;
+        }
+
+        if true {
+            let avg_loss = sum_loss / train_loader.len() as f32;
+            let avg_acc = sum_acc / train_loader.len() as f64;
+            println!("epoch {} loss {:.10} accuracy {:.10}", epoch, avg_loss, avg_acc);
+
+            let mut sum_loss = 0.0;
+            let mut sum_acc = 0.0;
+            for r in test_loader.iter() {
+                let (x, t) = r?;
+                let model = optimizer.get_model_mut_result()?;
+                let t = t.unwrap();
+                let len = t.len();
+                {
+                    let _guard = no_grad();
+                    let y = model.forward(&[x.into()])?.remove(0);
+                    let loss = softmax_cross_entropy(&y, &t.clone().into())?;
+                    sum_loss += *loss.data()
+                        .to_f32_tensor()?.get_data().get(0).unwrap()
+                        * len as f32;
+                    sum_acc += accuracy(
+                        y.data().to_f32_tensor()?, &t)? * len as f64;
+                }
+            }
+            let avg_loss = sum_loss / test_loader.len() as f32;
             let avg_acc = sum_acc / test_loader.len() as f64;
             println!("test loss {:.10} accuracy {:.10}", avg_loss, avg_acc);
         }

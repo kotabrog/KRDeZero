@@ -8,6 +8,8 @@ pub enum TensorError {
     ShapeError(Vec<usize>, Vec<usize>),
     #[error("ShapeSizeError: data: {0}, shape: {1}")]
     ShapeSizeError(usize, usize),
+    #[error("ShapeMismatchError: shape: {0:?}, expected: {1:?}")]
+    ShapeMismatchError(Vec<usize>, Vec<usize>),
     #[error("DimensionError: dimension: {0}, expected: {1}")]
     DimensionError(usize, usize),
     #[error("DimensionSmallerError: dimension: {0}, expected: >={1}")]
@@ -78,6 +80,25 @@ mod tests {
             Err(e) => {
                 let e = e.downcast::<TensorError>().context("downcast error")?;
                 assert_eq!(e.to_string(), "ShapeSizeError: data: 1, shape: 2");
+                Ok(())
+            }
+        }
+    }
+
+    fn error_shape_mismatch() -> Result<()> {
+        Err(TensorError::ShapeMismatchError(vec![1, 2], vec![3, 4]).into())
+    }
+
+    #[test]
+    fn tensor_error_shape_mismatch() -> Result<()> {
+        match error_shape_mismatch() {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().context("downcast error")?;
+                assert_eq!(
+                    e.to_string(),
+                    "ShapeMismatchError: shape: [1, 2], expected: [3, 4]"
+                );
                 Ok(())
             }
         }

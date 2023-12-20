@@ -13,6 +13,9 @@ test_ktensor:
 test_integrate_step:
 	cargo test step -- --nocapture --test-threads=1
 
+test_long_integrate_step:
+	LONG_TEST=1 cargo test --release step -- --nocapture --test-threads=1
+
 doc:
 	cargo doc --open
 

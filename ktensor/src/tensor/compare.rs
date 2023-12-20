@@ -1,4 +1,5 @@
 use anyhow::Result;
+use num_traits::{One, Zero};
 use super::Tensor;
 use crate::error::TensorError;
 
@@ -140,6 +141,35 @@ where
         Tensor::new(new_data, shape)
     }
 
+    /// Get the maximum value of two tensors
+    /// 
+    /// # Arguments
+    /// 
+    /// * `other` - The other tensor
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Self>` - The maximum value
+    /// 
+    /// # Note
+    /// 
+    /// If the shape of the two tensors is different, `ShapeMismatchError` is returned
+    pub fn maximum(&self, other: &Self) -> Result<Self> {
+        if self.shape != other.shape {
+            return Err(TensorError::ShapeMismatchError(self.shape.clone(), other.shape.clone()).into())
+        }
+        let data = self.data.iter()
+            .zip(other.data.iter())
+            .map(|(x, y)| {
+                if x > y {
+                    x.clone()
+                } else {
+                    y.clone()
+                }
+            }).collect::<Vec<_>>();
+        Ok(Tensor::new(data, self.shape.clone())?)
+    }
+
     /// Get the minimum value of the tensor
     /// 
     /// # Returns
@@ -161,6 +191,32 @@ where
             }
             Ok(min)
         }
+    }
+}
+
+impl<T> Tensor<T>
+where
+    T: Clone + One + Zero
+{
+    /// Create a binary mask from the condition
+    /// 
+    /// # Arguments
+    /// 
+    /// * `condition` - The condition
+    /// 
+    /// # Returns
+    /// 
+    /// * `Result<Self>` - The binary mask
+    pub fn create_binyary_mask_from_condition(&self, condition: fn (&T) -> bool) -> Result<Self> {
+        let data = self.data.iter()
+            .map(|x| {
+                if condition(x) {
+                    T::one()
+                } else {
+                    T::zero()
+                }
+            }).collect::<Vec<_>>();
+        Ok(Tensor::new(data, self.shape.clone())?)
     }
 }
 
@@ -289,6 +345,42 @@ mod tests {
     }
 
     #[test]
+    fn maximum_normal() {
+        let x = Tensor::new([0.0, 3.0, 4.0], [3,]).unwrap();
+        let y = Tensor::new([1.0, 2.0, 4.0], [3,]).unwrap();
+        let z = x.maximum(&y).unwrap();
+        assert_eq!(z.get_data(), &vec![1.0, 3.0, 4.0]);
+        assert_eq!(z.get_shape(), &vec![3]);
+        let x = Tensor::new([0.0, 3.0, 4.0], [3, 1]).unwrap();
+        let y = Tensor::new([1.0, 2.0, 4.0], [3, 1]).unwrap();
+        let z = x.maximum(&y).unwrap();
+        assert_eq!(z.get_data(), &vec![1.0, 3.0, 4.0]);
+        assert_eq!(z.get_shape(), &vec![3, 1]);
+    }
+
+    #[test]
+    fn maximum_empty() {
+        let x = Tensor::<f32>::new([], [0]).unwrap();
+        let y = Tensor::<f32>::new([], [0]).unwrap();
+        let z = x.maximum(&y).unwrap();
+        assert_eq!(z.get_data(), &vec![]);
+        assert_eq!(z.get_shape(), &vec![0]);
+    }
+
+    #[test]
+    fn maximum_error_shape() {
+        let x = Tensor::new([0.0, 3.0, 4.0], [3,]).unwrap();
+        let y = Tensor::new([1.0, 2.0], [2,]).unwrap();
+        match x.maximum(&y) {
+            Ok(_) => panic!("error"),
+            Err(e) => {
+                let e = e.downcast::<TensorError>().unwrap();
+                assert_eq!(e, TensorError::ShapeMismatchError(vec![3], vec![2]));
+            }
+        }
+    }
+
+    #[test]
     fn min_normal() {
         let x = Tensor::new([0.0, 1.0, 2.0], [3,]).unwrap();
         assert_eq!(x.min().unwrap(), 0.0);
@@ -308,5 +400,13 @@ mod tests {
                 assert_eq!(e, TensorError::EmptyTensorError());
             }
         }
+    }
+
+    #[test]
+    fn create_binyary_mask_from_condition_normal() {
+        let x = Tensor::new([0.0, 1.0, 2.0, 3.0], [2, 2]).unwrap();
+        let y = x.create_binyary_mask_from_condition(|x| *x > 1.0).unwrap();
+        assert_eq!(y.get_data(), &vec![0.0, 0.0, 1.0, 1.0]);
+        assert_eq!(y.get_shape(), &vec![2, 2]);
     }
 }

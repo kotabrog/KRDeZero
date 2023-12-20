@@ -22,6 +22,7 @@ mod get_item;
 mod softmax;
 mod log;
 mod softmax_cross_entropy;
+mod relu;
 
 pub use square::{Square, square};
 pub use exp::{Exp, exp};
@@ -50,3 +51,4 @@ pub use get_item::{
 pub use softmax::{Softmax, softmax};
 pub use log::{Log, log};
 pub use softmax_cross_entropy::{SoftmaxCrossEntropy, softmax_cross_entropy};
+pub use relu::{Relu, relu};

@@ -1,7 +1,7 @@
 mod info;
 mod create;
 mod conversion;
-mod operater;
+mod operator;
 
 use ktensor::Tensor;
 
